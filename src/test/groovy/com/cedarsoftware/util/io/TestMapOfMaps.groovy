@@ -336,8 +336,8 @@ class TestMapOfMaps
         assertTrue(map.get("nullValue") == null)
         assertTrue(map.get("string").equals("yo"))
 
-        assertTrue(map.col > 0)
-        assertTrue(map.line > 0)
+        assert map.getColumn() > 0
+        assert map.getLine() > 0
     }
 
     @Test

@@ -32,7 +32,7 @@ class TestCustomClassHandler
         public WeirdDate(long millis) { super(millis) }
     }
 
-    public class WeirdDateWriter implements GroovyJsonWriter.JsonClassWriter
+    public class WeirdDateWriter implements GroovyJsonWriter.JsonClassWriter 
     {
         public void write(Object o, boolean showType, Writer out) throws IOException
         {

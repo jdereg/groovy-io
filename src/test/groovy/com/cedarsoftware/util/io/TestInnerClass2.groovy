@@ -2,7 +2,6 @@ package com.cedarsoftware.util.io
 
 import org.junit.Test
 
-//package com.cedarsoftware.util.io
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
  *         <br/>
@@ -20,23 +19,24 @@ import org.junit.Test
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
-class TestInnerClass
+class TestInnerClass2
 {
     @Test
-    void testInnerInstance() throws Exception
+    void testChangedClass() throws Exception
     {
         Dog dog = new Dog()
-        dog.x = 10;
-//        Dog.Leg leg = dog.new Dog.Leg()
-        Dog.Leg leg = Dog.createLeg(dog)
-        leg.y = 20;
+        dog.x = 10
+//        Dog.Leg leg = dog.new Dog.Leg()       // original Java
+        Dog.Leg leg = Dog.createLeg(dog)        // Groovy requires static method on outer class to create non-static inner instance
+        leg.y = 20
         String json0 = TestUtil.getJsonString(dog)
         TestUtil.printLine("json0=" + json0)
-
-        String json1 = TestUtil.getJsonString(leg)
+        JsonObject job = (JsonObject) GroovyJsonReader.jsonToMaps(json0)
+        job.put("phantom", new TestObject("Eddie"))
+        String json1 = TestUtil.getJsonString(job)
         TestUtil.printLine("json1=" + json1)
-        Dog.Leg go = (Dog.Leg) TestUtil.readJsonObject(json1)
-        assert go.y == 20
-        assert go.getParentX() == 10
+        assert json1.contains("phantom")
+        assert json1.contains("TestObject")
+        assert json1.contains("_other")
     }
 }
