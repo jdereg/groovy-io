@@ -11,11 +11,11 @@ Perfect Groovy / Java serialization to and from JSON format (available on Maven 
 ```
 <a class="coinbase-button" data-code="f5ab44535dc53e81b79e71f123ebdf42" data-button-style="custom_large" data-custom="json-io" href="https://coinbase.com/checkouts/f5ab44535dc53e81b79e71f123ebdf42">Feed hungry developers...</a><script src="https://coinbase.com/assets/button.js" type="text/javascript"></script>
 
-**groovy-io** consists of two main classes, a reader (`JsonReader`) and a writer (`JsonWriter`).  **groovy-io** eliminates the need for using `ObjectInputStream / ObjectOutputStream` to serialize Java and instead uses the JSON format.  There is a 3rd optional class (`JsonObject`) see 'Non-typed Usage' below.
+**groovy-io** consists of two main classes, a reader (`JsonReader`) and a writer (`GroovyJsonWriter`).  **groovy-io** eliminates the need for using `ObjectInputStream / ObjectOutputStream` to serialize Java and instead uses the JSON format.  There is a 3rd optional class (`JsonObject`) see 'Non-typed Usage' below.
 
 **groovy-io** does not require that Java classes implement `Serializable` or `Externalizable` to be serialized, unlike `ObjectInputStream` / `ObjectOutputStream`.  It will serialize any Java object graph into JSON and retain complete graph semantics / shape and object types.  This includes supporting private fields, private inner classes (static or non-static), of any depth.  It also includes handling cyclic references.  Objects do not need to have public constructors to be serialized.  The output JSON will not include `transient` fields, identical to the ObjectOutputStream behavior.
 
-The `JsonReader / JsonWriter` code does not depend on any native or 3rd party libraries.
+The `JsonReader / GroovyJsonWriter` code does not depend on any native or 3rd party libraries.
 
 _For useful and powerful Java utilities, check out java-util at http://github.com/jdereg/java-util_
 
@@ -42,7 +42,7 @@ _Example 2: Java object to JSON String_
 
     Employee emp;
     // Emp fetched from database
-    String json = JsonWriter.objectToJson(emp);
+    String json = GroovyJsonWriter.objectToJson(emp);
 
 This example will convert the `Employee` instance to a JSON String.  If the `JsonReader` were used on this `String`, it would reconstitute a Java `Employee` instance.
 
@@ -57,7 +57,7 @@ _Example 4: Java Object to `OutputStream`_
 
     Employee emp;
     // emp obtained from database
-    JsonWriter jw = new JsonWriter(outputStream);
+    GroovyJsonWriter jw = new GroovyJsonWriter(outputStream);
     jw.write(emp);
     jw.close();
 
@@ -81,13 +81,13 @@ This 'Maps' representation can be re-written to a JSON String or Stream and _the
 New APIs have been added to allow you to associate a custom reader / writer class to a particular class if you want it to be read / written specially in the JSON output.  **groovy-io** 1.x required a custom method be implemented on the object which was having its JSON format customized.  This support has been removed.  That approach required access to the source code for the class being customized.  The new **groovy-io** 2.0 approach allows you to customize the JSON format for classes for which you do not have the source code.
 
 #### Dates
-To specify an alternative date format for `JsonWriter`:
+To specify an alternative date format for `GroovyJsonWriter`:
 
     Map args = new HashMap();
-    args.put(JsonWriter.DATE_FORMAT, JsonWriter.ISO_DATE_TIME);
-    String json = JsonWriter.objectToJson(root, args);
+    args.put(GroovyJsonWriter.DATE_FORMAT, GroovyJsonWriter.ISO_DATE_TIME);
+    String json = GroovyJsonWriter.objectToJson(root, args);
 
-In this example, the ISO `yyyy/MM/ddTHH:mm:ss` format is used to format dates in the JSON output. The 'value' associated to the 'DATE_FORMAT' key can be `JsonWriter.ISO_DATE_TIME`, `JsonWriter.ISO_DATE`, a date format String pattern (eg. `yyyy/MM/dd HH:mm`), or a `java.text.Format` instance.
+In this example, the ISO `yyyy/MM/ddTHH:mm:ss` format is used to format dates in the JSON output. The 'value' associated to the 'DATE_FORMAT' key can be `GroovyJsonWriter.ISO_DATE_TIME`, `GroovyJsonWriter.ISO_DATE`, a date format String pattern (eg. `yyyy/MM/dd HH:mm`), or a `java.text.Format` instance.
 
 ### Javascript
 Included is a small Javascript utility that will take a JSON output stream created by the JSON writer and substitute all `@ref's` for the actual pointed to object.  It's a one-line call - `resolveRefs(json)`.  This will substitute `@ref` tags in the JSON for the actual pointed-to object.  In addition, the `@keys` / `@items` will also be converted into Javascript Maps and Arrays.  Finally, there is a Javascript API that will convert a full Javascript object graph to JSON, (even if it has cycles within the graph).  This will maintain the proper graph-shape when sending it from the client back to the server.
@@ -96,7 +96,7 @@ Included is a small Javascript utility that will take a JSON output stream creat
 Even though **groovy-io** is perfect for Java / Javascript serialization, there are other great uses for it:
 
 ### Cloning
-Many projects use `JsonWriter` to write an object to JSON, then use the `JsonReader` to read it in, perfectly cloning the original object graph:
+Many projects use `GroovyJsonWriter` to write an object to JSON, then use the `JsonReader` to read it in, perfectly cloning the original object graph:
 
     Employee emp;
     // emp obtained from database
@@ -104,14 +104,14 @@ Many projects use `JsonWriter` to write an object to JSON, then use the `JsonRea
 
     public Object cloneObject(Object root)
     {
-        return JsonReader.jsonToJava(JsonWriter.objectToJson(root));
+        return JsonReader.jsonToJava(GroovyJsonWriter.objectToJson(root));
     }
 
 ### Debugging
-Instead of doing `System.out.println()` debugging, call `JsonWriter.objectToJson(obj)` and dump that String out.  It will reveal the object in all it's glory.
+Instead of doing `System.out.println()` debugging, call `GroovyJsonWriter.objectToJson(obj)` and dump that String out.  It will reveal the object in all it's glory.
 
 ### Pretty-Printing JSON
-Use `JsonWriter.formatJson()` API to format a passed in JSON string to a nice, human readable format.  Also, when writing JSON data, use the `JsonWriter.objectToJson(o, args)` API, where args is a `Map` with a key of `JsonWriter.PRETTY_PRINT` and a value of 'true' (`boolean` or `String`).  When run this way, the JSON written by the `JsonWriter` will be formatted in a nice, human readable format.
+Use `GroovyJsonWriter.formatJson()` API to format a passed in JSON string to a nice, human readable format.  Also, when writing JSON data, use the `GroovyJsonWriter.objectToJson(o, args)` API, where args is a `Map` with a key of `GroovyJsonWriter.PRETTY_PRINT` and a value of 'true' (`boolean` or `String`).  When run this way, the JSON written by the `GroovyJsonWriter` will be formatted in a nice, human readable format.
 
 ### RESTful support
 **groovy-io** can be used as the fundamental data transfer method between a Javascript / JQuery / Ajax client and a web server in a RESTful fashion. Used this way, you can create more active sites like Google's GMail, MyOtherDrive online backup, etc.
@@ -121,7 +121,7 @@ See https://github.com/jdereg/json-command-servlet for a light-weight servlet th
 Featured on http://json.org.
  * 2.9.2
   * Android: Rearranged `[:.]` to `[.:]` in regular expressions for Android compatibility.  Technically, it should not matter, but `[:.]` was causing `java.util.regex.PatternSyntaxException: Syntax error U_ILLEGAL_ARGUMENT_ERROR` on Android JVM.
-  * Bug fix: When using the `JsonWriter` arguments `Map` with `FIELD_SPECIFIERS`, if you specified a field that was transient, it was not serialized.  This has been corrected.  When you specify the field list for a given class, the `Map` can contain any non-static fields in the class, including transient fields.
+  * Bug fix: When using the `GroovyJsonWriter` arguments `Map` with `FIELD_SPECIFIERS`, if you specified a field that was transient, it was not serialized.  This has been corrected.  When you specify the field list for a given class, the `Map` can contain any non-static fields in the class, including transient fields.
   * All JUnit tests converted to Groovy.
  * 2.9.1
   * Bug fix: Parameterized types are only internally stamped onto generic Maps (Maps read with no `@type`) if the field that points to the `Map` is a template variable or it has template arguments.
@@ -148,8 +148,8 @@ Featured on http://json.org.
   * Improved date parsing: day of week support (long or short name), days with suffix (3rd, 25th, etc.), Java's default `.toString()` output for `Date` now parses, full time zone support, extra whitespace allowed within the date string.
   * Added ability to have custom JSON writers for interfaces (submitted by @KaiHufenbach).
  * 2.7.2
-  * When writing JSON, less memory is used to manage referenced objects.  `JsonWriter` requires a smaller memory foot print during writing.
-  * New option available to JsonWriter that allows you to force enums to not write private variables.  First you can make them transient.  However, if you do not own the code or cannot change it, you can set the `JsonWriter.getArgs().put(ENUM_PUBLIC_ONLY, true)`, and then only public fields on enums will be emitted.
+  * When writing JSON, less memory is used to manage referenced objects.  `GroovyJsonWriter` requires a smaller memory foot print during writing.
+  * New option available to GroovyJsonWriter that allows you to force enums to not write private variables.  First you can make them transient.  However, if you do not own the code or cannot change it, you can set the `GroovyJsonWriter.getArgs().put(ENUM_PUBLIC_ONLY, true)`, and then only public fields on enums will be emitted.
  * 2.7.1
   * `BigDecimal` and `BigInteger` are now always written as a primitive (immutable, non-referenced) value.  This uniformizes their output.
  * 2.7.0
@@ -159,15 +159,15 @@ Featured on http://json.org.
  * 2.6.1
   * Bug fix: An internal `Map` that kept meta-information about a Java Class, changed to `ConcurrentHashMap` from `HashMap`.
  * 2.6.0
-  * Added support for specifying which fields on a class will be serialized.  Use the `JsonWriter.FIELD_SPECIFIERS` key and assign the value to a `Map<Class, List<String>>`, where the keys of the `Map` are classes (e.g. Bingo.class) and the values are `List<String>`, which indicates the fields to serialize for the class.  This provides a way to reduce the number of fields written for a given class.  For example, you may encounter a 3rd Party class which fails to serialize because it has an oddball field like a `ClassLoader` reference as a non-static, non-transient field. You may not have access to the source code to mark the field as `transient`. In this case, add the appropriate entries in the `FIELD_SPECIFIERS` map. Voila, problem solved. Use the `JsonWriter` API that takes `optionalArgs Map`.  The key for this `Map` is `JsonWriter.FIELD_SPECIFIER` and the value is `Map<Class, List<String>>`.
+  * Added support for specifying which fields on a class will be serialized.  Use the `GroovyJsonWriter.FIELD_SPECIFIERS` key and assign the value to a `Map<Class, List<String>>`, where the keys of the `Map` are classes (e.g. Bingo.class) and the values are `List<String>`, which indicates the fields to serialize for the class.  This provides a way to reduce the number of fields written for a given class.  For example, you may encounter a 3rd Party class which fails to serialize because it has an oddball field like a `ClassLoader` reference as a non-static, non-transient field. You may not have access to the source code to mark the field as `transient`. In this case, add the appropriate entries in the `FIELD_SPECIFIERS` map. Voila, problem solved. Use the `GroovyJsonWriter` API that takes `optionalArgs Map`.  The key for this `Map` is `GroovyJsonWriter.FIELD_SPECIFIER` and the value is `Map<Class, List<String>>`.
  * 2.5.2
   * `java.net.URL` can now be used as a constructor argument.  The reader was throwing an exception instantiating a constructor with a `URL` parameter.
   * `java.lang.Object` parameters in constructor arguments are now tried with both null and `new Object()` now.
  * 2.5.1
   * Fixed a bug (introduced in 2.5.0) in the processing of a `Map` that has a `Collection` as a key.
  * 2.5.0
-  * New 'Pretty-Print' option available.  If the 'args' Map passed to `JsonWriter.objectToJson(o, args)` contains the key `JsonWriter.PRETTY_PRINT` and the value 'true' (`boolean` or `String`), the `JsonWriter` output will be formatted in a nice human readable format.
-  * Convert a JSON String to Pretty-Print format using `JsonWriter.formatJson(String json)`.  A `String` will be returned with the JSON formatted in a nice, human readable format.
+  * New 'Pretty-Print' option available.  If the 'args' Map passed to `GroovyJsonWriter.objectToJson(o, args)` contains the key `GroovyJsonWriter.PRETTY_PRINT` and the value 'true' (`boolean` or `String`), the `GroovyJsonWriter` output will be formatted in a nice human readable format.
+  * Convert a JSON String to Pretty-Print format using `GroovyJsonWriter.formatJson(String json)`.  A `String` will be returned with the JSON formatted in a nice, human readable format.
   * If a Field contains Parameterized types (e.g., `Map<String, Set<Long>>`, and so on), `JsonReader` will use those fields to process objects deep within Maps, Collections, etc. and still create the proper Java class.
  * 2.4.5
   * Allow "" to be set into `Date` field, setting the `Date` field (or `Date` array element) as null.
@@ -185,9 +185,9 @@ Featured on http://json.org.
   * `Maps` and `Collections` (`Lists`, `Set`, etc.) can be read in, even when there are no `@keys` or `@items` as would come from a Javascript client.
   * **groovy-io** will now use the generic info on a `Map<Foo, Bar>` or `Collection<Foo>` object's field when the `@type` information is not included. **groovy-io** will then know to create `Foo` instances, `Bar` instances, etc. within the `Collection` or `Map`.
   * All parsing error messages now output the last 100 characters read, making it easier to locate the problem in JSON text. Furthermore, line and column number are now included (before it was a single position number). This allows you to immediately find the offending location.
-  * You can now force `@type` to be written (not recommended) by putting the `JsonWriter.TYPE` key in the `JsonWriter` args map, and assigning the associated value to `true`.
+  * You can now force `@type` to be written (not recommended) by putting the `GroovyJsonWriter.TYPE` key in the `GroovyJsonWriter` args map, and assigning the associated value to `true`.
  * 2.2.32
-  * Date/Time format can be customized when writing JSON output. New optional `Map args` parameter added to main API of `JsonWriter` that specifies additional parameters for `JsonWriter`. Set the key to `JsonWriter.DATE_FORMAT` and the value to a `SimpleDateFormat` string.  Two ISO formats are available for convenience as constants on `JsonWriter`, `JsonWriter.ISO_DATE_FORMAT` and `JsonWriter.ISO_DATE_TIME_FORMAT`.
+  * Date/Time format can be customized when writing JSON output. New optional `Map args` parameter added to main API of `GroovyJsonWriter` that specifies additional parameters for `GroovyJsonWriter`. Set the key to `GroovyJsonWriter.DATE_FORMAT` and the value to a `SimpleDateFormat` string.  Two ISO formats are available for convenience as constants on `GroovyJsonWriter`, `GroovyJsonWriter.ISO_DATE_FORMAT` and `GroovyJsonWriter.ISO_DATE_TIME_FORMAT`.
   * `JsonReader` updated to read many different date/time formats.
   * When `JsonReader` encounters a class that cannot be constructed, you can associate a `ClassFactory` to the class, so that then the un-instantiable class is encountered, your factory class will be called to create the class. New API: `JsonReader.assignInstantiator(Class c, ClassFactory factory)`
  * 2.2.31
