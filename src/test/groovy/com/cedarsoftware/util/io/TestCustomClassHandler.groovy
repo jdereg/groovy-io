@@ -36,7 +36,7 @@ class TestCustomClassHandler
         public void write(Object o, boolean showType, Writer out) throws IOException
         {
             String value = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").format((Date) o)
-            out.write("\"stuff\":\"")
+            out.write('"stuff":"')
             out.write(value)
             out.write('"')
         }
@@ -55,7 +55,7 @@ class TestCustomClassHandler
         }
     }
 
-    public class WeirdDateReader implements GroovyJsonReader.JsonClassReader
+    public class WeirdDateReader implements JsonTypeReader
     {
         public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
         {
