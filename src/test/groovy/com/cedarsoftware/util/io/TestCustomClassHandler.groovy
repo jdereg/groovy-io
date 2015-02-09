@@ -32,8 +32,7 @@ class TestCustomClassHandler
         public WeirdDate(long millis) { super(millis) }
     }
 
-    public class WeirdDateWriter implements GroovyJsonWriter.JsonClassWriter 
-    {
+    public class WeirdDateWriter implements JsonTypeWriter {
         public void write(Object o, boolean showType, Writer out) throws IOException
         {
             String value = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").format((Date) o)

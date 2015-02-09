@@ -71,7 +71,7 @@ class TestInternalAPIs
     @Test
     void testNoAnalysisForCustomWriter() throws Exception
     {
-        GroovyJsonWriter.addWriter(Dog.class, new GroovyJsonWriter.JsonClassWriter() {
+        GroovyJsonWriter.addWriter(Dog.class, new JsonTypeWriter() {
             public void writePrimitiveForm(Object o, Writer out)  throws IOException
             { }
 
