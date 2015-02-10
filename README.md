@@ -97,7 +97,7 @@ Even though **groovy-io** is perfect for Groovy / Javascript serialization, ther
 ### Cloning
 Many projects use `GroovyJsonWriter` to write an object to JSON, then use the `GroovyJsonReader` to read it in, perfectly cloning the original object graph:
 
-    Employee emp;
+    Employee emp
     // emp obtained from database
     Employee deepCopy = (Employee) cloneObject(emp)
 
