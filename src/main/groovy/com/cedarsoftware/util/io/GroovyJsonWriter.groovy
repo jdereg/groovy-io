@@ -64,20 +64,20 @@ class GroovyJsonWriter implements Closeable, Flushable
     public static final String ENUM_PUBLIC_ONLY = "ENUM_PUBLIC_ONLY" // If set, indicates that private variables of ENUMs are not to be serialized
     private static final Map<String, ClassMeta> classMetaCache = new ConcurrentHashMap<>()
     private static final List<Object[]> writers = []
-    private static final Set<Class> notCustom = new HashSet<>()
+    private static final Set<Class> notCustom = [] as Set
     private static final Object[] byteStrings = new Object[256]
     private static final String newLine = System.getProperty("line.separator")
     private static final Long ZERO = 0L;
     private final Map<Object, Long> objVisited = new IdentityHashMap<>()
     private final Map<Object, Long> objsReferenced = new IdentityHashMap<>()
-    private final Writer out;
-    long identity = 1;
-    private int depth = 0;
+    private final Writer out
+    long identity = 1
+    private int depth = 0
     // _args is using ThreadLocal so that static inner classes can have access to them
     static final ThreadLocal<Map<String, Object>> _args = new ThreadLocal<Map<String, Object>>() {
         public Map<String, Object> initialValue()
         {
-            return new HashMap<>()
+            return [:]
         }
     }
     protected static final ThreadLocal<SimpleDateFormat> _dateFormat = new ThreadLocal<SimpleDateFormat>() {
