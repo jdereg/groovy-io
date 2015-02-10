@@ -34,15 +34,15 @@ If an object is referenced more than once, or references an object that has not 
 
 _Example 1: String to Groovy object_
 
-    Object obj = GroovyJsonReader.jsonToGroovy('["Hello, World"]');
+    Object obj = GroovyJsonReader.jsonToGroovy('["Hello, World"]')
 
 This will convert the JSON String to a Groovy Object graph.  In this case, it would consist of an `Object[]` of one `String` element.
 
 _Example 2: Groovy object to JSON String_
 
-    Employee emp;
+    Employee emp
     // Emp fetched from database
-    String json = GroovyJsonWriter.objectToJson(emp);
+    String json = GroovyJsonWriter.objectToJson(emp)
 
 This example will convert the `Employee` instance to a JSON String.  If the `GroovyJsonReader` were used on this `String`, it would reconstitute a Groovy `Employee` instance.
 
@@ -55,23 +55,23 @@ In this example, an `InputStream` (could be from a File, the Network, etc.) is s
 
 _Example 4: Groovy Object to `OutputStream`_
 
-    Employee emp;
+    Employee emp
     // emp obtained from database
-    GroovyJsonWriter jw = new GroovyJsonWriter(outputStream);
-    jw.write(emp);
-    jw.close();
+    GroovyJsonWriter jw = new GroovyJsonWriter(outputStream)
+    jw.write(emp)
+    jw.close()
 
 In this example, a Groovy object is written to an output stream in JSON format.
 
 ### Non-typed Usage
 **groovy-io** provides the choice to use the generic "Map of Maps" representation of an object graph, akin to a Javascript associative array.  When reading from a JSON String or `InputStream` of JSON, the `GroovyJsonReader` can be constructed like this:
 
-    Map graph = GroovyJsonReader.jsonToMaps(String json);
+    Map graph = GroovyJsonReader.jsonToMaps(String json)
 
 -- or --
 
-    GroovyJsonReader jr = new GroovyJsonReader(InputStream, true);
-    Map map = (Map) jr.readObject();
+    GroovyJsonReader jr = new GroovyJsonReader(InputStream, true)
+    Map map = (Map) jr.readObject()
 
 This will return an untyped object representation of the JSON String as a `Map` of Maps, where the fields are the `Map` keys (Strings), and the field values are the associated Map's values. In this representation the `Map` instance returned is actually a `JsonObject` instance (from **groovy-io**).  This `JsonObject` implements the `Map` interface permitting access to the entire object.  Cast to a `JsonObject`, you can see the type information, position within the JSON stream, and other information.
 
@@ -83,9 +83,8 @@ New APIs have been added to allow you to associate a custom reader / writer clas
 #### Dates
 To specify an alternative date format for `GroovyJsonWriter`:
 
-    Map args = new HashMap();
-    args.put(GroovyJsonWriter.DATE_FORMAT, GroovyJsonWriter.ISO_DATE_TIME);
-    String json = GroovyJsonWriter.objectToJson(root, args);
+    Map args = [(GroovyJsonWriter.DATE_FORMAT):GroovyJsonWriter.ISO_DATE_TIME]
+    String json = GroovyJsonWriter.objectToJson(root, args)
 
 In this example, the ISO `yyyy/MM/ddTHH:mm:ss` format is used to format dates in the JSON output. The 'value' associated to the 'DATE_FORMAT' key can be `GroovyJsonWriter.ISO_DATE_TIME`, `GroovyJsonWriter.ISO_DATE`, a date format String pattern (eg. `yyyy/MM/dd HH:mm`), or a `java.text.Format` instance.
 
@@ -100,11 +99,11 @@ Many projects use `GroovyJsonWriter` to write an object to JSON, then use the `G
 
     Employee emp;
     // emp obtained from database
-    Employee deepCopy = (Employee) cloneObject(emp);
+    Employee deepCopy = (Employee) cloneObject(emp)
 
     public Object cloneObject(Object root)
     {
-        return GroovyJsonReader.jsonToGroovy(GroovyJsonWriter.objectToJson(root));
+        return GroovyJsonReader.jsonToGroovy(GroovyJsonWriter.objectToJson(root))
     }
 
 ### Debugging
