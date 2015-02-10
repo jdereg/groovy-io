@@ -6,7 +6,7 @@ Perfect Groovy serialization to and from JSON format (available on Maven Central
 <dependency>
   <groupId>com.cedarsoftware</groupId>
   <artifactId>groovy-io</artifactId>
-  <version>1.0.0</version>   <!-- Coming soon -->
+  <version>1.0.0</version>
 </dependency>
 ```
 <a class="coinbase-button" data-code="f5ab44535dc53e81b79e71f123ebdf42" data-button-style="custom_large" data-custom="json-io" href="https://coinbase.com/checkouts/f5ab44535dc53e81b79e71f123ebdf42">Feed hungry developers...</a><script src="https://coinbase.com/assets/button.js" type="text/javascript"></script>
