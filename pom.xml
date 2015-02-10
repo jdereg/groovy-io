@@ -5,7 +5,7 @@
     <groupId>com.cedarsoftware</groupId>
     <artifactId>groovy-io</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.2</version>
     <description>Groovy JSON serialization</description>
     <url>https://github.com/jdereg/groovy-io</url>
 
@@ -21,7 +21,7 @@
         <url>https://github.com/jdereg/groovy-io</url>
         <connection>scm:git:git://github.com/jdereg/groovy-io.git</connection>
         <developerConnection>scm:git:git@github.com:jdereg/groovy-io.git</developerConnection>
-      <tag>HEAD</tag>
+      <tag>1.0.2.201502100150</tag>
     </scm>
 
     <developers>
