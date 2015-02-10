@@ -90,7 +90,7 @@ class TestMapOfMaps
     @Test
     void testForwardRefNegId() throws Exception
     {
-        Map doc = GroovyJsonReader.jsonToMaps(TestUtil.getResource("forwardRefNegId.json"))
+        Map doc = GroovyJsonReader.jsonToMaps(TestUtil.fetchResource("forwardRefNegId.json"))
         Object[] items = doc['@items']
         assertEquals(2, items.length)
         Map male = items[0]
@@ -395,7 +395,7 @@ class TestMapOfMaps
         TestUtil.printLine("json=" + json)
         JsonObject root = (JsonObject) GroovyJsonReader.jsonToMaps(json)
         GroovyJsonReader reader = new GroovyJsonReader()
-        TestObject test2 = (TestObject) reader.jsonObjectsToJava(root)
+        TestObject test2 = (TestObject) reader.jsonObjectsToGroovy(root)
         assertTrue(test2.equals(test))
         assertTrue(test2._other.equals(child))
     }
