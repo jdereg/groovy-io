@@ -11,7 +11,7 @@ Perfect Groovy serialization to and from JSON format (available on Maven Central
 ```
 <a class="coinbase-button" data-code="f5ab44535dc53e81b79e71f123ebdf42" data-button-style="custom_large" data-custom="json-io" href="https://coinbase.com/checkouts/f5ab44535dc53e81b79e71f123ebdf42">Feed hungry developers...</a><script src="https://coinbase.com/assets/button.js" type="text/javascript"></script>
 
-**groovy-io** consists of two main classes, a reader (`GroovyJsonReader`) and a writer (`GroovyJsonWriter`).  **groovy-io** eliminates the need for using `ObjectInputStream / ObjectOutputStream` to serialize Java and instead uses the JSON format.  There is a 3rd optional class (`JsonObject`) see 'Non-typed Usage' below.
+**groovy-io** consists of two main classes, a reader (`GroovyJsonReader`) and a writer (`GroovyJsonWriter`).  **groovy-io** eliminates the need for using `ObjectInputStream / ObjectOutputStream` to serialize objects and instead uses the JSON format.  There is a 3rd optional class (`JsonObject`) see 'Non-typed Usage' below.
 
 **groovy-io** does not require that Java classes implement `Serializable` or `Externalizable` to be serialized, unlike `ObjectInputStream` / `ObjectOutputStream`.  It will serialize any Java object graph into JSON and retain complete graph semantics / shape and object types.  This includes supporting private fields, private inner classes (static or non-static), of any depth.  It also includes handling cyclic references.  Objects do not need to have public constructors to be serialized.  The output JSON will not include `transient` fields, identical to the ObjectOutputStream behavior.
 
