@@ -423,7 +423,7 @@ class TestCollection
         // Forward reference
         String pkg = TestObject.class.name;
         json = '{"@type":"java.util.ArrayList","@items":[{"@ref":3},{"@id":3,"@type":"' + pkg + '","_name":"JSON","_other":null}]}'
-        list2 = (List) GroovyJsonReader.jsonToJava(json)
+        list2 = (List) GroovyJsonReader.jsonToGroovy(json)
         assertTrue(list.equals(list2))
     }
 
@@ -443,7 +443,7 @@ class TestCollection
     void testCollectionWithParameterizedTypes() throws Exception
     {
         String json = '{"@type":"' + ParameterizedCollection.class.getName() + '", "content":{"foo":[{"x":1,"y":2},{"x":10,"y":20}],"bar":[{"x":3,"y":4}, {"x":30,"y":40}]}}'
-        ParameterizedCollection pCol = (ParameterizedCollection) GroovyJsonReader.jsonToJava(json)
+        ParameterizedCollection pCol = (ParameterizedCollection) GroovyJsonReader.jsonToGroovy(json)
         Set<Point> points = pCol.content.get("foo")
         assertNotNull(points)
         assertEquals(2, points.size())
@@ -457,7 +457,7 @@ class TestCollection
         points.contains(new Point(30, 40))
 
         json = '{"@type":"' + ParameterizedCollection.class.getName() + '", "content":{"foo":[],"bar":null}}'
-        pCol = (ParameterizedCollection) GroovyJsonReader.jsonToJava(json)
+        pCol = (ParameterizedCollection) GroovyJsonReader.jsonToGroovy(json)
         points = pCol.content.get("foo")
         assertNotNull(points)
         assertEquals(0, points.size())
@@ -466,12 +466,12 @@ class TestCollection
         assertNull(points)
 
         json = '{"@type":"' + ParameterizedCollection.class.getName() + '", "content":{}}'
-        pCol = (ParameterizedCollection) GroovyJsonReader.jsonToJava(json)
+        pCol = (ParameterizedCollection) GroovyJsonReader.jsonToGroovy(json)
         assertNotNull(pCol.content)
         assertEquals(0, pCol.content.size())
 
         json = '{"@type":"' + ParameterizedCollection.class.getName() + '", "content":null}'
-        pCol = (ParameterizedCollection) GroovyJsonReader.jsonToJava(json)
+        pCol = (ParameterizedCollection) GroovyJsonReader.jsonToGroovy(json)
         assertNull(pCol.content)
     }
 

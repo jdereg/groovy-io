@@ -720,7 +720,7 @@ class TestArrays
         String json1 = TestUtil.getJsonString(map)
         TestUtil.printLine("json1=" + json1)
 
-        // Read back into typed Java objects, the Maps of Maps versus that was dumped out
+        // Read back into typed Groovy objects, the Maps of Maps versus that was dumped out
         Object[] result = (Object[]) TestUtil.readJsonObject(json1)
         assertTrue(result.length == 3)
         Object[] arr1 = (Object[]) result[0];
@@ -1037,7 +1037,7 @@ class TestArrays
     void testEmptyArray() throws Exception
     {
         String json = '{"@type":"[Ljava.lang.String;"}'
-        String[] s = (String[])GroovyJsonReader.jsonToJava(json)
+        String[] s = (String[])GroovyJsonReader.jsonToGroovy(json)
         assertTrue(s != null)
         assertTrue(s.length == 0)
     }
@@ -1142,7 +1142,7 @@ class TestArrays
         Object[] refArray = [array] as Object[]
         String json = GroovyJsonWriter.objectToJson(refArray)
         TestUtil.printLine("json=" + json)
-        Object[] oa = (Object[]) GroovyJsonReader.jsonToJava(json)
+        Object[] oa = (Object[]) GroovyJsonReader.jsonToGroovy(json)
         assertTrue(oa[0].getClass().equals(String[].class))
         assertTrue(((String[])oa[0]).length == 0)
     }

@@ -5,8 +5,8 @@ import java.lang.reflect.Array
 /**
  * This class holds a JSON object in a LinkedHashMap.
  * LinkedHashMap used to keep fields in same order as they are
- * when reflecting them in Java.  Instances of this class hold a
- * Map-of-Map representation of a Java object, read from the JSON
+ * when reflecting them in Groovy.  Instances of this class hold a
+ * Map-of-Map representation of a Groovy object, read from the JSON
  * input stream.
  *
  * @param <K> field name in Map-of-Map
@@ -28,7 +28,7 @@ import java.lang.reflect.Array
  *         See the License for the specific language governing permissions and
  *         limitations under the License.*
  */
-public class JsonObject<K, V> extends LinkedHashMap<K, V>
+class JsonObject<K, V> extends LinkedHashMap<K, V>
 {
     private boolean isMap = false
     private Object target

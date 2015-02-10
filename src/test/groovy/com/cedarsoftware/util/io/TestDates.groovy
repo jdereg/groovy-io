@@ -158,7 +158,7 @@ class TestDates
     void testDateParse() throws Exception
     {
         String json = '{"@type":"date","value":"2014 July 9"}'
-        Date date = (Date) GroovyJsonReader.jsonToJava(json)
+        Date date = (Date) GroovyJsonReader.jsonToGroovy(json)
         Calendar cal = Calendar.instance;
         cal.clear()
         cal.time = date;
@@ -169,7 +169,7 @@ class TestDates
         json = '{"@type":"date","value":"2014 Juggler 9"}'
         try
         {
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (Exception e)

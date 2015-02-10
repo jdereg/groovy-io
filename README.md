@@ -30,30 +30,30 @@ If an object is referenced more than once, or references an object that has not 
 **groovy-io** was written with performance in mind.  In most cases **groovy-io** is faster than the JDK's `ObjectInputStream / ObjectOutputStream`.  As the tests run, a log is written of the time it takes to serialize / deserialize and compares it to `ObjectInputStream / ObjectOutputStream` (if the static variable `_debug` is `true` in `TestUtil`).
 
 ### Usage
-**groovy-io** can be used directly on JSON Strings or with Java's Streams.
+**groovy-io** can be used directly on JSON Strings or with Groovy's Streams.
 
-_Example 1: String to Java object_
+_Example 1: String to Groovy object_
 
-    Object obj = GroovyJsonReader.jsonToJava("[\"Hello, World\"]");
+    Object obj = GroovyJsonReader.jsonToGroovy("[\"Hello, World\"]");
 
-This will convert the JSON String to a Java Object graph.  In this case, it would consist of an `Object[]` of one `String` element.
+This will convert the JSON String to a Groovy Object graph.  In this case, it would consist of an `Object[]` of one `String` element.
 
-_Example 2: Java object to JSON String_
+_Example 2: Groovy object to JSON String_
 
     Employee emp;
     // Emp fetched from database
     String json = GroovyJsonWriter.objectToJson(emp);
 
-This example will convert the `Employee` instance to a JSON String.  If the `GroovyJsonReader` were used on this `String`, it would reconstitute a Java `Employee` instance.
+This example will convert the `Employee` instance to a JSON String.  If the `GroovyJsonReader` were used on this `String`, it would reconstitute a Groovy `Employee` instance.
 
-_Example 3: `InputStream` to Java object_
+_Example 3: `InputStream` to Groovy object_
 
     GroovyJsonReader jr = new GroovyJsonReader(inputStream);
     Employee emp = (Employee) jr.readObject();
 
-In this example, an `InputStream` (could be from a File, the Network, etc.) is supplying an unknown amount of JSON.  The `GroovyJsonReader` is used to wrap the stream to parse it, and return the Java object graph it represents.
+In this example, an `InputStream` (could be from a File, the Network, etc.) is supplying an unknown amount of JSON.  The `GroovyJsonReader` is used to wrap the stream to parse it, and return the Groovy object graph it represents.
 
-_Example 4: Java Object to `OutputStream`_
+_Example 4: Groovy Object to `OutputStream`_
 
     Employee emp;
     // emp obtained from database
@@ -61,7 +61,7 @@ _Example 4: Java Object to `OutputStream`_
     jw.write(emp);
     jw.close();
 
-In this example, a Java object is written to an output stream in JSON format.
+In this example, a Groovy object is written to an output stream in JSON format.
 
 ### Non-typed Usage
 **groovy-io** provides the choice to use the generic "Map of Maps" representation of an object, akin to a Javascript associative array.  When reading from a JSON String or `InputStream` of JSON, the `GroovyJsonReader` can be constructed like this:
@@ -93,7 +93,7 @@ In this example, the ISO `yyyy/MM/ddTHH:mm:ss` format is used to format dates in
 Included is a small Javascript utility that will take a JSON output stream created by the JSON writer and substitute all `@ref's` for the actual pointed to object.  It's a one-line call - `resolveRefs(json)`.  This will substitute `@ref` tags in the JSON for the actual pointed-to object.  In addition, the `@keys` / `@items` will also be converted into Javascript Maps and Arrays.  Finally, there is a Javascript API that will convert a full Javascript object graph to JSON, (even if it has cycles within the graph).  This will maintain the proper graph-shape when sending it from the client back to the server.
 
 ### What's next?
-Even though **groovy-io** is perfect for Java / Javascript serialization, there are other great uses for it:
+Even though **groovy-io** is perfect for Groovy / Javascript serialization, there are other great uses for it:
 
 ### Cloning
 Many projects use `GroovyJsonWriter` to write an object to JSON, then use the `GroovyJsonReader` to read it in, perfectly cloning the original object graph:
@@ -104,7 +104,7 @@ Many projects use `GroovyJsonWriter` to write an object to JSON, then use the `G
 
     public Object cloneObject(Object root)
     {
-        return GroovyJsonReader.jsonToJava(GroovyJsonWriter.objectToJson(root));
+        return GroovyJsonReader.jsonToGroovy(GroovyJsonWriter.objectToJson(root));
     }
 
 ### Debugging

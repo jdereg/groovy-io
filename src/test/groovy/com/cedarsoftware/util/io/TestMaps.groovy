@@ -323,7 +323,7 @@ class TestMaps
     {
         AssignToList atl = new AssignToList()
         String json = '{"@id":1,"@type":"java.util.LinkedHashMap","@keys":["1000004947","0000020985","0000029443","0000020994"],"@items":["Me","Fox, James","Renewals, CORE","Gade, Raja"]}'
-        Map assignTo = (Map) GroovyJsonReader.jsonToJava(json)
+        Map assignTo = (Map) GroovyJsonReader.jsonToGroovy(json)
         assert assignTo instanceof LinkedHashMap
         atl.assignTo = assignTo;
         json = GroovyJsonWriter.objectToJson(atl)
@@ -334,7 +334,7 @@ class TestMaps
     void testMapWithParameterizedTypes() throws Exception
     {
         String json = '{"@type":"' + ParameterizedMap.class.getName() + '", "content":{"foo":{"one":{"x":1,"y":2},"two":{"x":10,"y":20}},"bar":{"ten":{"x":3,"y":4},"twenty":{"x":30,"y":40}}}}'
-        ParameterizedMap pCol = (ParameterizedMap) GroovyJsonReader.jsonToJava(json)
+        ParameterizedMap pCol = (ParameterizedMap) GroovyJsonReader.jsonToGroovy(json)
         Map<String, Point> points = pCol.content.get("foo")
         assertNotNull(points)
         assertEquals(2, points.size())

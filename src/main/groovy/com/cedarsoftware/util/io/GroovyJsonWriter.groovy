@@ -10,7 +10,7 @@ import java.util.Map.Entry
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Output a Java object graph in JSON format.  This code handles cyclic
+ * Output a Groovy object graph in JSON format.  This code handles cyclic
  * references and can serialize any Object graph without requiring a class
  * to be 'Serializeable' or have any specific methods on it.
  * <br/><ul><li>
@@ -50,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
-public class GroovyJsonWriter implements Closeable, Flushable
+class GroovyJsonWriter implements Closeable, Flushable
 {
     public static final String DATE_FORMAT = "DATE_FORMAT"         // Set the date format to use within the JSON output
     public static final String ISO_DATE_FORMAT = "yyyy-MM-dd"      // Constant for use as DATE_FORMAT value
@@ -146,7 +146,7 @@ public class GroovyJsonWriter implements Closeable, Flushable
     }
 
     /**
-     * Convert a Java Object to a JSON String.
+     * Convert a Groovy Object to a JSON String.
      *
      * @param item Object to convert to a JSON String.
      * @param optionalArgs (optional) Map of extra arguments indicating how dates are formatted,
@@ -210,7 +210,7 @@ public class GroovyJsonWriter implements Closeable, Flushable
             args[(FIELD_SPECIFIERS)] = [:]
         }
         else
-        {   // Convert String field names to Java Field instances (makes it easier for user to set this up)
+        {   // Convert String field names to Groovy Field instances (makes it easier for user to set this up)
             Map<Class, List<String>> specifiers = (Map<Class, List<String>>) args[(FIELD_SPECIFIERS)]
             Map<Class, List<Field>> copy = [:]
             for (Entry<Class, List<String>> entry : specifiers.entrySet())

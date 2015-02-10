@@ -62,7 +62,7 @@ class TestErrors
   },
   "string: "Hello World"
 }'''
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -91,7 +91,7 @@ class TestErrors
   },
   "string:" "Hello World"
 }'''
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -121,7 +121,7 @@ class TestErrors
   },
   "string": "Hello World"
 """
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -134,12 +134,12 @@ class TestErrors
     void testParseMissingLastBracket() throws IOException
     {
         String json = '[true, "bunch of ints", 1,2, 3 , 4, 5 , 6,7,8,9,10]'
-        GroovyJsonReader.jsonToJava(json)
+        GroovyJsonReader.jsonToGroovy(json)
 
         try
         {
             json = '[true, "bunch of ints", 1,2, 3 , 4, 5 , 6,7,8,9,10'
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -156,7 +156,7 @@ class TestErrors
         try
         {
             json = '[true, "bunch of ints", 1,2, 3 , 4, 5 , 6,7,8,9,\'a\']'
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -171,7 +171,7 @@ class TestErrors
         try
         {
             String json = '{"key": true{'
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -186,7 +186,7 @@ class TestErrors
         try
         {
             String json = '"\\u5h1t"'
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -201,7 +201,7 @@ class TestErrors
         try
         {
             String json = '"What if I try to escape incorrectly \\L1CK"'
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -216,7 +216,7 @@ class TestErrors
         try
         {
             String json = '"This is an unfinished string...'
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -231,7 +231,7 @@ class TestErrors
         try
         {
             String json = "falsz"
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -246,7 +246,7 @@ class TestErrors
         try
         {
             String json = "tru"
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -261,7 +261,7 @@ class TestErrors
         try
         {
             String json = "[true, false,"
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -527,7 +527,7 @@ class TestErrors
         String json = '[{"@type":"funky"},\n{"field:"value"]'
         try
         {
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e) { }

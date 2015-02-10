@@ -48,7 +48,7 @@ class TestUnmodifiableCollection
         col.add('qux')
         col = Collections.unmodifiableCollection(col)
         String json = TestUtil.getJsonString(col)
-        def root = GroovyJsonReader.jsonToJava(json)
+        def root = GroovyJsonReader.jsonToGroovy(json)
         assert root instanceof List
         assert root.size() == 4
         assert root[0] == 'foo'
@@ -63,7 +63,7 @@ class TestUnmodifiableCollection
         col.add('qux')
         col = Collections.unmodifiableList(col)
         json = TestUtil.getJsonString(col)
-        root = GroovyJsonReader.jsonToJava(json)
+        root = GroovyJsonReader.jsonToGroovy(json)
         assert root instanceof List
         assert root.size() == 4
         assert root[0] == 'foo'
@@ -82,7 +82,7 @@ class TestUnmodifiableCollection
         col.add('qux')
         col = Collections.unmodifiableSet(col)
         String json = TestUtil.getJsonString(col)
-        def root = GroovyJsonReader.jsonToJava(json)
+        def root = GroovyJsonReader.jsonToGroovy(json)
         assert root instanceof Set
         assert root.size() == 4
         assert root[0] == 'foo'
@@ -97,7 +97,7 @@ class TestUnmodifiableCollection
         col.add('qux')
         col = Collections.unmodifiableSet(col)
         json = TestUtil.getJsonString(col)
-        root = GroovyJsonReader.jsonToJava(json)
+        root = GroovyJsonReader.jsonToGroovy(json)
         assert root instanceof Set
         assert root.size() == 4
         assert root.contains('foo')
@@ -112,7 +112,7 @@ class TestUnmodifiableCollection
         col.add('qux')
         col = Collections.unmodifiableSortedSet(col)
         json = TestUtil.getJsonString(col)
-        root = GroovyJsonReader.jsonToJava(json)
+        root = GroovyJsonReader.jsonToGroovy(json)
         assert root instanceof SortedSet
         assert root.size() == 4
         assert root[0] == 'bar'
@@ -131,7 +131,7 @@ class TestUnmodifiableCollection
         map.qux = 'quixotic'
         map = Collections.unmodifiableMap(map)
         String json = TestUtil.getJsonString(map)
-        def root = GroovyJsonReader.jsonToJava(json)
+        def root = GroovyJsonReader.jsonToGroovy(json)
         assert root instanceof Map
         assert root.size() == 4
         assert root.foo == 'foot'
@@ -146,7 +146,7 @@ class TestUnmodifiableCollection
         map.qux = 'quixotic'
         map = Collections.unmodifiableSortedMap(map)
         json = TestUtil.getJsonString(map)
-        root = GroovyJsonReader.jsonToJava(json)
+        root = GroovyJsonReader.jsonToGroovy(json)
         assert root instanceof SortedMap
         assert root.size() == 4
         assert root.foo == 'foot'

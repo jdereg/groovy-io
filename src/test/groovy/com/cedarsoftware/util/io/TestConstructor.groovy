@@ -326,7 +326,7 @@ class TestConstructor
     void testWriterObjectAPI() throws Exception
     {
         String json = "[1,true,null,3.14,[]]"
-        Object o = GroovyJsonReader.jsonToJava(json)
+        Object o = GroovyJsonReader.jsonToGroovy(json)
         assert TestUtil.getJsonString(o) == json
 
         ByteArrayOutputStream ba = new ByteArrayOutputStream()

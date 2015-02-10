@@ -52,7 +52,7 @@ class TestMapOfMaps
 
         try
         {
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -71,7 +71,7 @@ class TestMapOfMaps
 
         try
         {
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)
@@ -150,7 +150,7 @@ class TestMapOfMaps
     {
         String json = '{"traits":{"ui:attributes":{"type":"text","label":"Risk Type","maxlength":"30"},"v:max":"1","v:min":"1","v:regex":"[[0-9][a-z][A-Z]]","db:attributes":{"selectColumn":"QR.RISK_TYPE_REF_ID","table":"QUOTE_RISK","tableAlias":"QR","column":"QUOTE_ID","columnName":"QUOTE_ID","columnAlias":"c:riskType","joinTable":"QUOTE","joinAlias":"Q","joinColumn":"QUOTE_ID"},"r:exists":true,"r:value":"risk"}}'
         TestUtil.printLine("json = " + json)
-        Map root = (Map) GroovyJsonReader.jsonToJava(json)
+        Map root = (Map) GroovyJsonReader.jsonToGroovy(json)
         Map traits = (Map) root.traits
         Map uiAttributes = (Map) traits['ui:attributes']
         String label = (String) uiAttributes['label']
@@ -167,7 +167,7 @@ class TestMapOfMaps
     {
         String json = '[{"traits":{"ui:attributes":{"type":"text","label":"Risk Type","maxlength":"30"},"v:max":"1","v:min":"1","v:regex":"[[0-9][a-z][A-Z]]","db:attributes":{"selectColumn":"QR.RISK_TYPE_REF_ID","table":"QUOTE_RISK","tableAlias":"QR","column":"QUOTE_ID","columnName":"QUOTE_ID","columnAlias":"c:riskType","joinTable":"QUOTE","joinAlias":"Q","joinColumn":"QUOTE_ID"},"r:exists":true,"r:value":"risk"}},{"key1":1,"key2":2}]'
         TestUtil.printLine("json = " + json)
-        Object[] root = (Object[]) GroovyJsonReader.jsonToJava(json)
+        Object[] root = (Object[]) GroovyJsonReader.jsonToGroovy(json)
         Map traits = (Map) root[0]
         traits = (Map) traits.traits
         Map uiAttributes = (Map) traits['ui:attributes']
@@ -368,7 +368,7 @@ class TestMapOfMaps
         String jsonGenerated = GroovyJsonWriter.formatJson(GroovyJsonWriter.objectToJson(map))
         assert json == jsonGenerated
 
-        Map clone = (Map) GroovyJsonReader.jsonToJava(jsonGenerated)
+        Map clone = (Map) GroovyJsonReader.jsonToGroovy(jsonGenerated)
         assert map.equals(clone)
     }
 
@@ -381,7 +381,7 @@ class TestMapOfMaps
         String jsonGenerated = GroovyJsonWriter.objectToJson(map)
         assert json == jsonGenerated
 
-        Map clone = (Map) GroovyJsonReader.jsonToJava(jsonGenerated)
+        Map clone = (Map) GroovyJsonReader.jsonToGroovy(jsonGenerated)
         assert map.equals(clone)
     }
 

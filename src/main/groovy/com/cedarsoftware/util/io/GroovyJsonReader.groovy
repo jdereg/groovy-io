@@ -13,28 +13,28 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 /**
- * Read an object graph in JSON format and make it available in Java objects, or
+ * Read an object graph in JSON format and make it available in Groovy objects, or
  * in a "Map of Maps." (untyped representation).  This code handles cyclic references
  * and can deserialize any Object graph without requiring a class to be 'Serializeable'
  * or have any specific methods on it.  It will handle classes with non public constructors.
  * <br/><br/>
  * Usages:
  * <ul><li>
- * Call the static method: {@code JsonReader.jsonToJava(String json)}.  This will
- * return a typed Java object graph.</li>
+ * Call the static method: {@code GroovyJsonReader.jsonToGroovy(String json)}.  This will
+ * return a typed Groovy object graph.</li>
  * <li>
- * Call the static method: {@code JsonReader.jsonToMaps(String json)}.  This will
+ * Call the static method: {@code GroovyJsonReader.jsonToMaps(String json)}.  This will
  * return an untyped object representation of the JSON String as a Map of Maps, where
  * the fields are the Map keys, and the field values are the associated Map's values.  You can
- * call the JsonWriter.objectToJson() method with the returned Map, and it will serialize
+ * call the GroovyJsonWriter.objectToJson() method with the returned Map, and it will serialize
  * the Graph into the identical JSON stream from which it was read.
  * <li>
- * Instantiate the JsonReader with an InputStream: {@code JsonReader(InputStream in)} and then call
- * {@code readObject()}.  Cast the return value of readObject() to the Java class that was the root of
+ * Instantiate the GroovyJsonReader with an InputStream: {@code GroovyJsonReader(InputStream in)} and then call
+ * {@code readObject()}.  Cast the return value of readObject() to the Groovy class that was the root of
  * the graph.
  * </li>
  * <li>
- * Instantiate the JsonReader with an InputStream: {@code JsonReader(InputStream in, true)} and then call
+ * Instantiate the GroovyJsonReader with an InputStream: {@code GroovyJsonReader(InputStream in, true)} and then call
  * {@code readObject()}.  The return value will be a Map of Maps.
  * </li></ul><br/>
  *
@@ -54,7 +54,7 @@ import java.util.regex.Pattern
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
-public class GroovyJsonReader implements Closeable
+class GroovyJsonReader implements Closeable
 {
     private static final int STATE_READ_START_OBJECT = 0;
     private static final int STATE_READ_FIELD = 1;
@@ -1105,13 +1105,13 @@ public class GroovyJsonReader implements Closeable
     }
 
     /**
-     * Convert the passed in JSON string into a Java object graph.
+     * Convert the passed in JSON string into a Groovy object graph.
      *
      * @param json String JSON input
-     * @return Java object graph matching JSON input
+     * @return Groovy object graph matching JSON input
      * @throws java.io.IOException If an I/O error occurs
      */
-    public static Object jsonToJava(String json) throws IOException
+    public static Object jsonToGroovy(String json) throws IOException
     {
         ByteArrayInputStream ba = new ByteArrayInputStream(json.getBytes("UTF-8"))
         GroovyJsonReader jr = new GroovyJsonReader(ba, false)
@@ -1121,13 +1121,13 @@ public class GroovyJsonReader implements Closeable
     }
 
     /**
-     * Convert the passed in JSON string into a Java object graph
-     * that consists solely of Java Maps where the keys are the
+     * Convert the passed in JSON string into a Groovy object graph
+     * that consists solely of Groovy Maps where the keys are the
      * fields and the values are primitives or other Maps (in the
      * case of objects).
      *
      * @param json String JSON input
-     * @return Java object graph of Maps matching JSON input,
+     * @return Groovy object graph of Maps matching JSON input,
      *         or null if an error occurred.
      * @throws java.io.IOException If an I/O error occurs
      */
@@ -1183,9 +1183,9 @@ public class GroovyJsonReader implements Closeable
     /**
      * Finite State Machine (FSM) used to parse the JSON input into
      * JsonObject's (Maps).  Then, if requested, the JsonObjects are
-     * converted into Java instances.
+     * converted into Groovy instances.
      *
-     * @return Java Object graph constructed from InputStream supplying
+     * @return Groovy Object graph constructed from InputStream supplying
      *         JSON serialized content.
      * @throws java.io.IOException for stream errors or parsing errors.
      */
@@ -1224,10 +1224,10 @@ public class GroovyJsonReader implements Closeable
 
     /**
      * Convert a root JsonObject that represents parsed JSON, into
-     * an actual Java object.
+     * an actual Groovy object.
      * @param root JsonObject instance that was the root object from the
      * JSON input that was parsed in an earlier call to JsonReader.
-     * @return a typed Java instance that was serialized into JSON.
+     * @return a typed Groovy instance that was serialized into JSON.
      */
     public Object jsonObjectsToJava(JsonObject root) throws IOException
     {
@@ -1237,13 +1237,13 @@ public class GroovyJsonReader implements Closeable
 
     /**
      * This method converts a root Map, (which contains nested Maps
-     * and so forth representing a Java Object graph), to a Java
+     * and so forth representing a Groovy Object graph), to a Groovy
      * object instance.  The root map came from using the JsonReader
      * to parse a JSON graph (using the API that puts the graph
      * into Maps, not the typed representation).
      * @param root JsonObject instance that was the root object from the
      * JSON input that was parsed in an earlier call to JsonReader.
-     * @return a typed Java instance that was serialized into JSON.
+     * @return a typed Groovy instance that was serialized into JSON.
      */
     protected Object convertParsedMapsToJava(JsonObject root) throws IOException
     {
@@ -1259,12 +1259,12 @@ public class GroovyJsonReader implements Closeable
 
     /**
      * Walk a JsonObject (Map of String keys to values) and return the
-     * Java object equivalent filled in as best as possible (everything
+     * Groovy object equivalent filled in as best as possible (everything
      * except unresolved reference fields or unresolved array/collection elements).
      *
      * @param root JsonObject reference to a Map-of-Maps representation of the JSON
      *             input after it has been completely read.
-     * @return Properly constructed, typed, Java object graph built from a Map
+     * @return Properly constructed, typed, Groovy object graph built from a Map
      *         of Maps representation (JsonObject root).
      * @throws java.io.IOException for stream errors or parsing errors.
      */
@@ -1425,7 +1425,7 @@ public class GroovyJsonReader implements Closeable
                     }
                 }
                 else
-                {    // Convert JSON HashMap to Java Object instance and assign values
+                {    // Convert JSON HashMap to Groovy Object instance and assign values
                     Object arrayElement = createJavaObjectInstance(compType, jsonObject)
                     Array.set(array, i, arrayElement)
                     if (!isLogicalPrimitive(arrayElement.getClass()))
@@ -1559,7 +1559,7 @@ public class GroovyJsonReader implements Closeable
                 col.add(special)
             }
             else if (element instanceof String || element instanceof Boolean || element instanceof Double || element instanceof Long)
-            {    // Allow Strings, Booleans, Longs, and Doubles to be "inline" without Java object decoration (@id, @type, etc.)
+            {    // Allow Strings, Booleans, Longs, and Doubles to be "inline" without Groovy object decoration (@id, @type, etc.)
                 col.add(element)
             }
             else if (element.getClass().isArray())
@@ -1619,7 +1619,7 @@ public class GroovyJsonReader implements Closeable
      */
     protected void traverseMap(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj) throws IOException
     {
-        // Convert @keys to a Collection of Java objects.
+        // Convert @keys to a Collection of Groovy objects.
         convertMapToKeysItems(jsonObj)
         Object[] keys = (Object[]) jsonObj.get("@keys")
         Object[] items = jsonObj.getArray()
@@ -1748,7 +1748,7 @@ public class GroovyJsonReader implements Closeable
     }
 
     /**
-     * Walk the Java object fields and copy them from the JSON object to the Java object, performing
+     * Walk the Groovy object fields and copy them from the JSON object to the Groovy object, performing
      * any necessary conversions on primitives, or deep traversals for field assignments to other objects,
      * arrays, Collections, or Maps.
      * @param stack   Stack (Deque) used for graph traversal.
@@ -1783,13 +1783,13 @@ public class GroovyJsonReader implements Closeable
     }
 
     /**
-     * Map Json Map object field to Java object field.
+     * Map Json Map object field to Groovy object field.
      *
      * @param stack   Stack (Deque) used for graph traversal.
      * @param jsonObj a Map-of-Map representation of the current object being examined (containing all fields).
-     * @param field   a Java Field object representing where the jsonObj should be converted and stored.
+     * @param field   a Groovy Field object representing where the jsonObj should be converted and stored.
      * @param rhs     the JSON value that will be converted and stored in the 'field' on the associated
-     *                Java target object.
+     *                Groovy target object.
      * @throws java.io.IOException for stream errors or parsing errors.
      */
     protected void assignField(final Deque<JsonObject<String, Object>> stack, final JsonObject jsonObj,
@@ -2119,7 +2119,7 @@ public class GroovyJsonReader implements Closeable
     }
 
     /**
-     * This method creates a Java Object instance based on the passed in parameters.
+     * This method creates a Groovy Object instance based on the passed in parameters.
      * If the JsonObject contains a key '@type' then that is used, as the type was explicitly
      * set in the JSON stream.  If the key '@type' does not exist, then the passed in Class
      * is used to create the instance, handling creating an Array or regular Object
@@ -2130,7 +2130,7 @@ public class GroovyJsonReader implements Closeable
      *
      * @param clazz   Instance will be create of this class.
      * @param jsonObj Map-of-Map representation of object to create.
-     * @return a new Java object of the appropriate type (clazz) using the jsonObj to provide
+     * @return a new Groovy object of the appropriate type (clazz) using the jsonObj to provide
      *         enough hints to get the right class instantiated.  It is not populated when returned.
      * @throws java.io.IOException for stream errors or parsing errors.
      */
@@ -2140,7 +2140,7 @@ public class GroovyJsonReader implements Closeable
         final String type = jsonObj.getType()
         Object mate;
 
-        // @type always takes precedence over inferred Java (clazz) type.
+        // @type always takes precedence over inferred Groovy (clazz) type.
         if (type != null)
         {    // @type is explicitly set, use that as it always takes precedence
             Class c;
@@ -2976,7 +2976,7 @@ public class GroovyJsonReader implements Closeable
             case "java.lang.Character":
                 if (rhs == null)
                 {
-                    return '\u0000';
+                    return (char)'\u0000';
                 }
                 if (rhs instanceof String)
                 {

@@ -49,7 +49,7 @@ class TestUsingSunMisc
         Object[] array = new Object[1]
         array[0] = shoe;
         String workaroundString = GroovyJsonWriter.objectToJson(array)
-        GroovyJsonReader.jsonToJava(workaroundString)// shoe can be accessed by
+        GroovyJsonReader.jsonToGroovy(workaroundString)// shoe can be accessed by
         // checking array type + length
         // and accessing [0]
 
@@ -58,7 +58,7 @@ class TestUsingSunMisc
         // It is expected, that this object is instantiated twice:
         // -once for analysis + Stack
         // -deserialization with Stack
-        GroovyJsonReader.jsonToJava(json)
+        GroovyJsonReader.jsonToGroovy(json)
     }
 
     @Test
@@ -67,16 +67,16 @@ class TestUsingSunMisc
         GroovyJsonReader.useUnsafe = true;
         // this test will fail without directCreation
         Dog.OtherShoe shoe = Dog.OtherShoe.construct()
-        Dog.OtherShoe oShoe = (Dog.OtherShoe) GroovyJsonReader.jsonToJava((GroovyJsonWriter.objectToJson(shoe)))
+        Dog.OtherShoe oShoe = (Dog.OtherShoe) GroovyJsonReader.jsonToGroovy((GroovyJsonWriter.objectToJson(shoe)))
         assertTrue(shoe.equals(oShoe))
-        oShoe = (Dog.OtherShoe) GroovyJsonReader.jsonToJava((GroovyJsonWriter.objectToJson(shoe)))
+        oShoe = (Dog.OtherShoe) GroovyJsonReader.jsonToGroovy((GroovyJsonWriter.objectToJson(shoe)))
         assertTrue(shoe.equals(oShoe))
 
         try
         {
             GroovyJsonReader.useUnsafe = false;
             shoe = Dog.OtherShoe.construct()
-            GroovyJsonReader.jsonToJava((GroovyJsonWriter.objectToJson(shoe)))
+            GroovyJsonReader.jsonToGroovy((GroovyJsonWriter.objectToJson(shoe)))
             fail()
         }
         catch (NullPointerException ignored)
@@ -86,7 +86,7 @@ class TestUsingSunMisc
         GroovyJsonReader.useUnsafe = true;
         // this test will fail without directCreation
         Dog.OtherShoe.construct()
-        oShoe = (Dog.OtherShoe) GroovyJsonReader.jsonToJava((GroovyJsonWriter.objectToJson(shoe)))
+        oShoe = (Dog.OtherShoe) GroovyJsonReader.jsonToGroovy((GroovyJsonWriter.objectToJson(shoe)))
         assertTrue(shoe.equals(oShoe))
     }
 
@@ -106,7 +106,7 @@ class TestUsingSunMisc
         String json = '{"@type":"' + ShouldBeImpossibleToInstantiate.class.name + '", "x":50}'
         try
         {
-            GroovyJsonReader.jsonToJava(json)
+            GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (Exception e)
@@ -115,7 +115,7 @@ class TestUsingSunMisc
         }
 
         GroovyJsonReader.useUnsafe = true
-        ShouldBeImpossibleToInstantiate s = GroovyJsonReader.jsonToJava(json)
+        ShouldBeImpossibleToInstantiate s = GroovyJsonReader.jsonToGroovy(json)
         assert s.x == 50
         GroovyJsonReader.useUnsafe = false
     }

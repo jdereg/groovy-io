@@ -153,7 +153,7 @@ class TestTemplateFields
         String json = GroovyJsonWriter.objectToJson(container)
 
         // This would throw exception in the past
-        GroovyJsonReader.jsonToJava(json)
+        GroovyJsonReader.jsonToGroovy(json)
     }
 
     @Test
@@ -162,7 +162,7 @@ class TestTemplateFields
         Test3 container = new Test3()
         String json = GroovyJsonWriter.objectToJson(container)
         // This would throw exception in the past
-        Test3 reanimated = GroovyJsonReader.jsonToJava(json)
+        Test3 reanimated = GroovyJsonReader.jsonToGroovy(json)
         assert reanimated.internalMember.two.name == 'Jane'
         assert reanimated.internalMember.two.age == 45
     }
@@ -172,7 +172,7 @@ class TestTemplateFields
     {
         UseSingle useSingle = new UseSingle(new Single<String>("Steel", "Wood"))
         String json = GroovyJsonWriter.objectToJson(useSingle)
-        UseSingle other = (UseSingle) GroovyJsonReader.jsonToJava(json)
+        UseSingle other = (UseSingle) GroovyJsonReader.jsonToGroovy(json)
 
         assertEquals("Steel", other.single.field1)
         assertEquals("Wood", other.single.field2)
@@ -183,7 +183,7 @@ class TestTemplateFields
     {
         UseTwoParam useTwoParam = new UseTwoParam(new TwoParam("Hello", "Goodbye", new Point(20, 40)))
         String json = GroovyJsonWriter.objectToJson(useTwoParam)
-        UseTwoParam other = (UseTwoParam) GroovyJsonReader.jsonToJava(json)
+        UseTwoParam other = (UseTwoParam) GroovyJsonReader.jsonToGroovy(json)
 
         assertEquals("Hello", other.twoParam.field1)
         assertEquals("Goodbye", other.twoParam.field2)
@@ -191,7 +191,7 @@ class TestTemplateFields
 
         useTwoParam = new UseTwoParam(new TwoParam(new Point(10, 30), new Point(20, 40), "Hello"))
         json = GroovyJsonWriter.objectToJson(useTwoParam)
-        other = (UseTwoParam) GroovyJsonReader.jsonToJava(json)
+        other = (UseTwoParam) GroovyJsonReader.jsonToGroovy(json)
 
         assertEquals(new Point(10, 30), other.twoParam.field1)
         assertEquals(new Point(20, 40), other.twoParam.field2)
@@ -199,7 +199,7 @@ class TestTemplateFields
 
         useTwoParam = new UseTwoParam(new TwoParam(50, 100, "Hello"))
         json = GroovyJsonWriter.objectToJson(useTwoParam)
-        other = (UseTwoParam) GroovyJsonReader.jsonToJava(json)
+        other = (UseTwoParam) GroovyJsonReader.jsonToGroovy(json)
 
         assertEquals(50, other.twoParam.field1)
         assertEquals(100, other.twoParam.field2)
@@ -207,7 +207,7 @@ class TestTemplateFields
 
         useTwoParam = new UseTwoParam(new TwoParam(new Point(10, 30), new Point(20, 40), new TestObject("Hello")))
         json = GroovyJsonWriter.objectToJson(useTwoParam)
-        other = (UseTwoParam) GroovyJsonReader.jsonToJava(json)
+        other = (UseTwoParam) GroovyJsonReader.jsonToGroovy(json)
 
         assertEquals(new Point(10, 30), other.twoParam.field1)
         assertEquals(new Point(20, 40), other.twoParam.field2)
@@ -221,7 +221,7 @@ class TestTemplateFields
 
         String json = GroovyJsonWriter.objectToJson(useSingle)
         //this will crash on ArrayIndexOutOfBoundsException
-        StaticUseSingle other = (StaticUseSingle) GroovyJsonReader.jsonToJava(json)
+        StaticUseSingle other = (StaticUseSingle) GroovyJsonReader.jsonToGroovy(json)
 
         assertEquals("Boonies", other.single.field1)
     }
@@ -230,13 +230,13 @@ class TestTemplateFields
     void test3TypeGeneric() throws Exception
     {
         String json = '{"@type":"' + GenericHolder.class.getName() + '","a":{"t":{"x":1,"y":2},"u":"Sochi","v":{"x":10,"y":20}}}'
-        GenericHolder gen = (GenericHolder) GroovyJsonReader.jsonToJava(json)
+        GenericHolder gen = (GenericHolder) GroovyJsonReader.jsonToGroovy(json)
         assertEquals(new Point(1, 2), gen.a.t)
         assertEquals("Sochi", gen.a.u)
         assertEquals(new Point(10, 20), gen.a.v)
 
         json = '{"@type":"' + GenericHolder.class.getName() + '","a":{"t":null,"u":null,"v":null}}'
-        gen = (GenericHolder) GroovyJsonReader.jsonToJava(json)
+        gen = (GenericHolder) GroovyJsonReader.jsonToGroovy(json)
         assertNull(gen.a.t)
         assertNull(gen.a.u)
         assertNull(gen.a.v)

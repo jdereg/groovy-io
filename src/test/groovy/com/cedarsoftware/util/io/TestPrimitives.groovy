@@ -106,49 +106,49 @@ class TestPrimitives
     void testEmptyPrimitives() throws Exception
     {
         String json = '{"@type":"byte"}'
-        Byte b = (Byte) GroovyJsonReader.jsonToJava(json)
+        Byte b = (Byte) GroovyJsonReader.jsonToGroovy(json)
         assertTrue(b.getClass().equals(Byte.class))
         assertTrue(b == 0)
 
         json = '{"@type":"short"}'
-        Short s = (Short) GroovyJsonReader.jsonToJava(json)
+        Short s = (Short) GroovyJsonReader.jsonToGroovy(json)
         assertTrue(s.getClass().equals(Short.class))
         assertTrue(s == 0)
 
         json = '{"@type":"int"}'
-        Integer i = (Integer) GroovyJsonReader.jsonToJava(json)
+        Integer i = (Integer) GroovyJsonReader.jsonToGroovy(json)
         assertTrue(i.getClass().equals(Integer.class))
         assertTrue(i == 0)
 
         json = '{"@type":"long"}'
-        Long l = (Long) GroovyJsonReader.jsonToJava(json)
+        Long l = (Long) GroovyJsonReader.jsonToGroovy(json)
         assertTrue(l.getClass().equals(Long.class))
         assertTrue(l == 0)
 
         json = '{"@type":"float"}'
-        Float f = (Float) GroovyJsonReader.jsonToJava(json)
+        Float f = (Float) GroovyJsonReader.jsonToGroovy(json)
         assertTrue(f.getClass().equals(Float.class))
         assertTrue(f == 0.0f)
 
         json = '{"@type":"double"}'
-        Double d = (Double) GroovyJsonReader.jsonToJava(json)
+        Double d = (Double) GroovyJsonReader.jsonToGroovy(json)
         assertTrue(d.getClass().equals(Double.class))
         assertTrue(d == 0.0d)
 
         json = '{"@type":"char"}'
-        Character c = (Character) GroovyJsonReader.jsonToJava(json)
+        Character c = (Character) GroovyJsonReader.jsonToGroovy(json)
         assertTrue(c.getClass().equals(Character.class))
         assertTrue(c == '\u0000')
 
         json = '{"@type":"boolean"}'
-        Boolean bool = (Boolean) GroovyJsonReader.jsonToJava(json)
+        Boolean bool = (Boolean) GroovyJsonReader.jsonToGroovy(json)
         assertTrue(bool == Boolean.FALSE)
 
         json = '{"@type":"string"}'
         String str = null;
         try
         {
-            str = (String) GroovyJsonReader.jsonToJava(json)
+            str = (String) GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
         catch (IOException e)

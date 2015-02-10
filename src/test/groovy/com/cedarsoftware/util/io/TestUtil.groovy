@@ -83,7 +83,7 @@ class TestUtil
     static Object readJsonObject(String json) throws Exception
     {
         long startRead1 = System.nanoTime()
-        Object o = GroovyJsonReader.jsonToJava(json)
+        Object o = GroovyJsonReader.jsonToGroovy(json)
         long endRead1 = System.nanoTime()
 
         try
