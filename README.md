@@ -48,8 +48,8 @@ This example will convert the `Employee` instance to a JSON String.  If the `Gro
 
 _Example 3: `InputStream` to Groovy object_
 
-    GroovyJsonReader jr = new GroovyJsonReader(inputStream);
-    Employee emp = (Employee) jr.readObject();
+    GroovyJsonReader jr = new GroovyJsonReader(inputStream)
+    Employee emp = (Employee) jr.readObject()
 
 In this example, an `InputStream` (could be from a File, the Network, etc.) is supplying an unknown amount of JSON.  The `GroovyJsonReader` is used to wrap the stream to parse it, and return the Groovy object graph it represents.
 
