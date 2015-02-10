@@ -1,5 +1,7 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
+
 import java.lang.reflect.Array
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
@@ -50,6 +52,7 @@ import java.util.concurrent.ConcurrentHashMap
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class GroovyJsonWriter implements Closeable, Flushable
 {
     public static final String DATE_FORMAT = "DATE_FORMAT"         // Set the date format to use within the JSON output
@@ -177,7 +180,7 @@ class GroovyJsonWriter implements Closeable, Flushable
     public static String formatJson(String json) throws IOException
     {
         Map map = GroovyJsonReader.jsonToMaps(json)
-        return objectToJson(map, [(PRETTY_PRINT):true])
+        return objectToJson(map, [(PRETTY_PRINT):true] as Map<String, Object>)
     }
 
     /**
@@ -553,7 +556,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         {
             Timestamp tstamp = (Timestamp) o;
             output.write('"time":"')
-            long x = tstamp.time / 1000L
+            long x = (long) tstamp.time / 1000L
             output.write(Long.toString(x * 1000L))
             output.write('","nanos":"')
             output.write(Integer.toString(tstamp.nanos))
@@ -1035,7 +1038,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         int len = Array.getLength(array)
         boolean referenced = objsReferenced.containsKey(array)
 //        boolean typeWritten = showType && !(Object[].class == arrayType)    // causes IDE warning in NetBeans 7/4 Java 1.7
-        boolean typeWritten = showType && !(arrayType.equals(Object[].class))
+        boolean typeWritten = showType && !(arrayType.equals(([] as Object[]).class))
 
         final Writer output = this.out; // performance opt: place in final local for quicker access
         if (typeWritten || referenced)
@@ -1088,35 +1091,35 @@ class GroovyJsonWriter implements Closeable, Flushable
         // Intentionally processing each primitive array type in separate
         // custom loop for speed. All of them could be handled using
         // reflective Array.get() but it is slower.  I chose speed over code length.
-        if (byte[].class == arrayType)
+        if (([] as byte[]).class == arrayType)
         {
             writeByteArray((byte[]) array, lenMinus1)
         }
-        else if (char[].class == arrayType)
+        else if (([] as char[]).class == arrayType)
         {
             writeJsonUtf8String(new String((char[]) array), output)
         }
-        else if (short[].class == arrayType)
+        else if (([] as short[]).class == arrayType)
         {
             writeShortArray((short[]) array, lenMinus1)
         }
-        else if (int[].class == arrayType)
+        else if (([] as int[]).class == arrayType)
         {
             writeIntArray((int[]) array, lenMinus1)
         }
-        else if (long[].class == arrayType)
+        else if (([] as long[]).class == arrayType)
         {
             writeLongArray((long[]) array, lenMinus1)
         }
-        else if (float[].class == arrayType)
+        else if (([] as float[]).class == arrayType)
         {
             writeFloatArray((float[]) array, lenMinus1)
         }
-        else if (double[].class == arrayType)
+        else if (([] as double[]).class == arrayType)
         {
             writeDoubleArray((double[]) array, lenMinus1)
         }
-        else if (boolean[].class == arrayType)
+        else if (([] as boolean[]).class == arrayType)
         {
             writeBooleanArray((boolean[]) array, lenMinus1)
         }
@@ -1124,7 +1127,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         {
             final Class componentClass = array.getClass().getComponentType()
             final boolean isPrimitiveArray = GroovyJsonReader.isPrimitive(componentClass)
-            final boolean isObjectArray = Object[].class == arrayType;
+            final boolean isObjectArray = ([] as Object[]).class == arrayType;
 
             for (int i = 0; i < len; i++)
             {
@@ -1360,9 +1363,9 @@ class GroovyJsonWriter implements Closeable, Flushable
         String type = jObj.getType()
         Class arrayClass;
 
-        if (type == null || Object[].class.getName().equals(type))
+        if (type == null || ([] as Object[]).class.getName().equals(type))
         {
-            arrayClass = Object[].class;
+            arrayClass = ([] as Object[]).class;
         }
         else
         {
@@ -1370,7 +1373,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
 
         final Writer output = this.out;
-        final boolean isObjectArray = Object[].class == arrayClass;
+        final boolean isObjectArray = ([] as Object[]).class == arrayClass;
         final Class componentClass = arrayClass.componentType
         boolean referenced = objsReferenced.containsKey(jObj) && jObj.hasId()
         boolean typeWritten = showType && !isObjectArray;
@@ -1941,7 +1944,7 @@ class GroovyJsonWriter implements Closeable, Flushable
     {
         for (Object o : map.keySet())
         {
-            if (!(o instanceof String || o instanceof Double || o instanceof Long || o instanceof Boolean))
+            if (!(o instanceof String))
             {
                 return false;
             }

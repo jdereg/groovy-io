@@ -1,5 +1,7 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
+
 import java.lang.reflect.Array
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
@@ -54,6 +56,7 @@ import java.util.regex.Pattern
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class GroovyJsonReader implements Closeable
 {
     private static final int STATE_READ_START_OBJECT = 0;
@@ -127,7 +130,7 @@ class GroovyJsonReader implements Closeable
         // Save memory by re-using common Characters (Characters are immutable)
         for (int i = 0; i < charCache.length; i++)
         {
-            charCache[i] = (char) i;
+            charCache[i] = new Character((char)i);
         }
 
         // Save memory by re-using all byte instances (Bytes are immutable)
@@ -1065,7 +1068,7 @@ class GroovyJsonReader implements Closeable
             if (clz == c)
             {
                 closestReader = (JsonTypeReader)item[1];
-                break;
+                break
             }
             int distance = GroovyJsonWriter.getDistance(clz, c)
             if (distance < minDistance)
@@ -1089,14 +1092,14 @@ class GroovyJsonReader implements Closeable
         private final long refId;
         private int index = -1;
 
-        private UnresolvedReference(JsonObject referrer, String fld, long id)
+        UnresolvedReference(JsonObject referrer, String fld, long id)
         {
             referencingObj = referrer;
             field = fld;
             refId = id;
         }
 
-        private UnresolvedReference(JsonObject referrer, int idx, long id)
+        UnresolvedReference(JsonObject referrer, int idx, long id)
         {
             referencingObj = referrer;
             index = idx;
@@ -1193,7 +1196,7 @@ class GroovyJsonReader implements Closeable
     {
         JsonObject root = new JsonObject()
         Object o = readValue(root)
-        if (o == EMPTY_OBJECT)
+        if (EMPTY_OBJECT.is(o))
         {
             return new JsonObject()
         }
@@ -1201,7 +1204,7 @@ class GroovyJsonReader implements Closeable
         Object graph;
         if (o instanceof Object[])
         {
-            root.setType(Object[].class.getName())
+            root.setType(([] as Object[]).class.getName())
             root.setTarget(o)
             root.put("@items", o)
             graph = convertParsedMapsToGroovy(root)
@@ -1364,7 +1367,7 @@ class GroovyJsonReader implements Closeable
             {
                 Array.set(array, i, null)
             }
-            else if (element == EMPTY_OBJECT)
+            else if (EMPTY_OBJECT.is(element))
             {    // Use either explicitly defined type in ObjectMap associated to JSON, or array component type.
                 Object arrayElement = createGroovyInstance(compType, new JsonObject())
                 Array.set(array, i, arrayElement)
@@ -1379,7 +1382,7 @@ class GroovyJsonReader implements Closeable
             }
             else if (element.getClass().isArray())
             {   // Array of arrays
-                if (char[].class == compType)
+                if (([] as char[]).class == compType)
                 {   // Specially handle char[] because we are writing these
                     // out as UTF-8 strings for compactness and speed.
                     Object[] jsonArray = (Object[]) element;
@@ -1483,7 +1486,7 @@ class GroovyJsonReader implements Closeable
 
         for (Object element : items)
         {
-            if (element == EMPTY_OBJECT)
+            if (EMPTY_OBJECT.is(element))
             {
                 copy.add(new JsonObject())
                 continue;
@@ -1550,7 +1553,7 @@ class GroovyJsonReader implements Closeable
             {
                 col.add(null)
             }
-            else if (element == EMPTY_OBJECT)
+            else if (EMPTY_OBJECT.is(element))
             {   // Handles {}
                 col.add(new JsonObject())
             }
@@ -1626,7 +1629,7 @@ class GroovyJsonReader implements Closeable
 
         if (keys == null || items == null)
         {
-            if (keys != items)
+            if (!keys.is(items))
             {
                 error("Map written where one of @keys or @items is empty")
             }
@@ -1681,7 +1684,7 @@ class GroovyJsonReader implements Closeable
             {
                 jsonObj.put(key, null)
             }
-            else if (value == EMPTY_OBJECT)
+            else if (EMPTY_OBJECT.is(value))
             {
                 jsonObj.put(key, new JsonObject())
             }
@@ -1824,7 +1827,7 @@ class GroovyJsonReader implements Closeable
             {
                 field.set(target, null)
             }
-            else if (rhs == EMPTY_OBJECT)
+            else if (EMPTY_OBJECT.is(rhs))
             {
                 JsonObject jObj = new JsonObject()
                 jObj.setType(fieldType.getName())
@@ -1839,7 +1842,7 @@ class GroovyJsonReader implements Closeable
             {    // LHS of assignment is an [] field or RHS is an array and LHS is Object
                 Object[] elements = (Object[]) rhs;
                 JsonObject<String, Object> jsonArray = new JsonObject<>()
-                if (char[].class == fieldType)
+                if (([] as char[]).class == fieldType)
                 {   // Specially handle char[] because we are writing these
                     // out as UTF8 strings for compactness and speed.
                     if (elements.length == 0)
@@ -2165,7 +2168,7 @@ class GroovyJsonReader implements Closeable
             {    // Handle []
                 Object[] items = jsonObj.getArray()
                 int size = (items == null) ? 0 : items.length;
-                if (c == char[].class)
+                if (c == ([] as char[]).class)
                 {
                     jsonObj.moveCharsToMate()
                     mate = jsonObj.getTarget()
@@ -2293,16 +2296,16 @@ class GroovyJsonReader implements Closeable
                         c = skipWhitespaceRead()
                         if (c == '}')
                         {    // empty object
-                            return EMPTY_OBJECT;
+                            return EMPTY_OBJECT
                         }
                         inp.unread(c)
-                        state = STATE_READ_FIELD;
+                        state = STATE_READ_FIELD
                     }
                     else
                     {
                         error("Input is invalid JSON; object does not start with '{', c=" + c)
                     }
-                    break;
+                    break
 
                 case STATE_READ_FIELD:
                     c = skipWhitespaceRead()
@@ -2315,13 +2318,13 @@ class GroovyJsonReader implements Closeable
                             error("Expected ':' between string field and value")
                         }
                         skipWhitespace()
-                        state = STATE_READ_VALUE;
+                        state = STATE_READ_VALUE
                     }
                     else
                     {
                         error("Expected quote")
                     }
-                    break;
+                    break
 
                 case STATE_READ_VALUE:
                     if (field == null)
@@ -2339,7 +2342,7 @@ class GroovyJsonReader implements Closeable
                         _objsRead.put((Long) value, object)
                     }
                     state = STATE_READ_POST_VALUE;
-                    break;
+                    break
 
                 case STATE_READ_POST_VALUE:
                     c = skipWhitespaceRead()
@@ -2359,7 +2362,7 @@ class GroovyJsonReader implements Closeable
                     {
                         error("Object not ended with '}'")
                     }
-                    break;
+                    break
             }
         }
 
@@ -2374,34 +2377,34 @@ class GroovyJsonReader implements Closeable
     private Object readValue(JsonObject object) throws IOException
     {
         final int c = input.read()
-        switch(c)
+        switch((char)c)
         {
-            case (int)'"':
+            case '"':
                 return readString()
-            case (int)'{':
-                input.unread((int)'{')
+            case '{':
+                input.unread(c)
                 return readJsonObject()
-            case (int)'[':
+            case '[':
                 return readArray(object)
-            case (int)']':   // empty array
-                input.unread((int)']')
+            case ']':   // empty array
+                input.unread(c)
                 return EMPTY_ARRAY;
-            case (int)'f':
-            case (int)'F':
+            case 'f':
+            case 'F':
                 input.unread(c)
                 readToken("false")
                 return Boolean.FALSE;
-            case (int)'n':
-            case (int)'N':
+            case 'n':
+            case 'N':
                 input.unread(c)
                 readToken("null")
                 return null;
-            case (int)'t':
-            case (int)'T':
+            case 't':
+            case 'T':
                 input.unread(c)
                 readToken("true")
                 return Boolean.TRUE;
-            case -1:
+            case -1 as char:
                 error("EOF reached prematurely")
         }
 
@@ -2423,7 +2426,7 @@ class GroovyJsonReader implements Closeable
         {
             skipWhitespace()
             final Object o = readValue(object)
-            if (o != EMPTY_ARRAY)
+            if (!EMPTY_ARRAY.is(o))
             {
                 array.add(o)
             }
@@ -2431,7 +2434,7 @@ class GroovyJsonReader implements Closeable
 
             if (c == ']')
             {
-                break;
+                break
             }
             else if (c != ',')
             {
@@ -2492,7 +2495,7 @@ class GroovyJsonReader implements Closeable
             while (true)
             {
                 c = inp.read()
-                if ((c >= '0' && c <= '9') || c == '-' || c == '+')     // isDigit() inlined for speed here
+                if ((c >= 0x30 && c <= 0x39) || c == '-' || c == '+')     // isDigit() inlined for speed here
                 {
                     buffer[len++] = (char) c;
                 }
@@ -2503,12 +2506,12 @@ class GroovyJsonReader implements Closeable
                 }
                 else if (c == -1)
                 {
-                    break;
+                    break
                 }
                 else
                 {
                     inp.unread(c)
-                    break;
+                    break
                 }
             }
         }
@@ -2522,7 +2525,7 @@ class GroovyJsonReader implements Closeable
             String num = new String(buffer, 0, len)
             try
             {
-                return Double.parseDouble(num)
+                return (Number)Double.parseDouble(num)
             }
             catch (NumberFormatException e)
             {
@@ -2536,7 +2539,7 @@ class GroovyJsonReader implements Closeable
         {
             n = (buffer[i] - (char)'0') + n * 10;
         }
-        return isNeg ? -n : n;
+        return (Number) (isNeg ? -n : n)
     }
 
     /**
@@ -2580,42 +2583,42 @@ class GroovyJsonReader implements Closeable
                     {
                         str.append(toChars(c))
                     }
-                    break;
+                    break
 
                 case STATE_STRING_SLASH:
-                    switch(c)
+                    switch((char)c)
                     {
-                        case (int)'\\':
+                        case '\\':
                             str.append('\\')
-                            break;
-                        case (int)'/':
+                            break
+                        case '/':
                             str.append('/')
-                            break;
-                        case (int)'"':
+                            break
+                        case '"':
                             str.append('"')
-                            break;
-                        case (int)'\'':
+                            break
+                        case '\'':
                             str.append('\'')
-                            break;
-                        case (int)'b':
+                            break
+                        case 'b':
                             str.append('\b')
-                            break;
-                        case (int)'f':
+                            break
+                        case 'f':
                             str.append('\f')
-                            break;
-                        case (int)'n':
+                            break
+                        case 'n':
                             str.append('\n')
-                            break;
-                        case (int)'r':
+                            break
+                        case 'r':
                             str.append('\r')
-                            break;
-                        case (int)'t':
+                            break
+                        case 't':
                             str.append('\t')
-                            break;
-                        case (int)'u':
+                            break
+                        case 'u':
                             state = STATE_HEX_DIGITS;
                             hex.setLength(0)
-                            break;
+                            break
                         default:
                             error("Invalid character escape sequence specified: " + c)
                     }
@@ -2624,33 +2627,33 @@ class GroovyJsonReader implements Closeable
                     {
                         state = STATE_STRING_START;
                     }
-                    break;
+                    break
 
                 case STATE_HEX_DIGITS:
-                    switch(c)
+                    switch((char)c)
                     {
-                        case (int)'0':
-                        case (int)'1':
-                        case (int)'2':
-                        case (int)'3':
-                        case (int)'4':
-                        case (int)'5':
-                        case (int)'6':
-                        case (int)'7':
-                        case (int)'8':
-                        case (int)'9':
-                        case (int)'A':
-                        case (int)'B':
-                        case (int)'C':
-                        case (int)'D':
-                        case (int)'E':
-                        case (int)'F':
-                        case (int)'a':
-                        case (int)'b':
-                        case (int)'c':
-                        case (int)'d':
-                        case (int)'e':
-                        case (int)'f':
+                        case '0':
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+                        case '8':
+                        case '9':
+                        case 'A':
+                        case 'B':
+                        case 'C':
+                        case 'D':
+                        case 'E':
+                        case 'F':
+                        case 'a':
+                        case 'b':
+                        case 'c':
+                        case 'd':
+                        case 'e':
+                        case 'f':
                             hex.append((char) c)
                             if (hex.length() == 4)
                             {
@@ -2658,11 +2661,11 @@ class GroovyJsonReader implements Closeable
                                 str.append(valueOf((char) value))
                                 state = STATE_STRING_START;
                             }
-                            break;
+                            break
                         default:
                             error("Expected hexadecimal digits")
                     }
-                    break;
+                    break
             }
         }
 
@@ -2991,7 +2994,7 @@ class GroovyJsonReader implements Closeable
                 {
                     return rhs;
                 }
-                break;
+                break
             case "double":
             case "java.lang.Double":
                 if (rhs instanceof String)
@@ -3069,7 +3072,7 @@ class GroovyJsonReader implements Closeable
 
     private static boolean isDigit(int c)
     {
-        return c >= '0' && c <= '9';
+        return c >= 0x30 && c <= 0x39
     }
 
     static Class classForName(String name) throws IOException
@@ -3081,7 +3084,7 @@ class GroovyJsonReader implements Closeable
         try
         {
             Class c = nameToClass.get(name)
-            return c == null ? loadClass(name) : c;
+            return c == null ? loadClass(name) : c
         }
         catch (ClassNotFoundException e)
         {
@@ -3106,29 +3109,29 @@ class GroovyJsonReader implements Closeable
             switch (className)
             {
                 case "[B":
-                    primitiveArray = byte[].class;
-                    break;
+                    primitiveArray = ([] as byte[]).class
+                    break
                 case "[S":
-                    primitiveArray = short[].class;
-                    break;
+                    primitiveArray = ([] as short[]).class
+                    break
                 case "[I":
-                    primitiveArray = int[].class;
-                    break;
+                    primitiveArray = ([] as int[]).class
+                    break
                 case "[J":
-                    primitiveArray = long[].class;
-                    break;
+                    primitiveArray = ([] as long[]).class
+                    break
                 case "[F":
-                    primitiveArray = float[].class;
-                    break;
+                    primitiveArray = ([] as float[]).class
+                    break
                 case "[D":
-                    primitiveArray = double[].class;
-                    break;
+                    primitiveArray = ([] as double[]).class
+                    break
                 case "[Z":
-                    primitiveArray = boolean[].class;
-                    break;
+                    primitiveArray = ([] as boolean[]).class
+                    break
                 case "[C":
-                    primitiveArray = char[].class;
-                    break;
+                    primitiveArray = ([] as char[]).class
+                    break
             }
             int startpos = className.startsWith("[L") ? 2 : 1;
             className = className.substring(startpos)
@@ -3180,13 +3183,13 @@ class GroovyJsonReader implements Closeable
         int c = inp.read()
         while (true)
         {
-            switch (c)
+            switch ((char)c)
             {
-                case (int)'\t':
-                case (int)'\n':
-                case (int)'\r':
-                case (int)' ':
-                    break;
+                case '\t':
+                case '\n':
+                case '\r':
+                case ' ':
+                    break
                 default:
                     return c;
             }
@@ -3407,13 +3410,13 @@ class GroovyJsonReader implements Closeable
 
         if (codePoint < MIN_SUPPLEMENTARY_CODE_POINT)
         {    // if the int character fits in two bytes...
-            return [(char) codePoint] as char[];
+            return [(char) codePoint] as char[]
         }
 
-        final char[] result = new char[2];
-        final int offset = codePoint - MIN_SUPPLEMENTARY_CODE_POINT;
-        result[1] = (char) ((offset & 0x3ff) + MIN_LOW_SURROGATE)
-        result[0] = (char) ((offset >>> 10) + MIN_HIGH_SURROGATE)
+        final char[] result = new char[2]
+        final int offset = codePoint - MIN_SUPPLEMENTARY_CODE_POINT
+        result[1] = ((offset & 0x3ff) + MIN_LOW_SURROGATE) as char
+        result[0] = ((offset >>> 10) + MIN_HIGH_SURROGATE) as char
         return result;
     }
 
@@ -3479,7 +3482,7 @@ class GroovyJsonReader implements Closeable
         private int col;
         private int snippetLoc = 0;
 
-        private FastPushbackReader(Reader reader, int size)
+        FastPushbackReader(Reader reader, int size)
         {
             super(reader)
             if (size <= 0)
@@ -3493,7 +3496,7 @@ class GroovyJsonReader implements Closeable
             col = 0;
         }
 
-        private FastPushbackReader(Reader r)
+        FastPushbackReader(Reader r)
         {
             this(r, 1)
         }
@@ -3505,14 +3508,14 @@ class GroovyJsonReader implements Closeable
             {
                 if (addCharToSnippet(s, i))
                 {
-                    break;
+                    break
                 }
             }
             for (int i=0; i < snippetLoc; i++)
             {
                 if (addCharToSnippet(s, i))
                 {
-                    break;
+                    break
                 }
             }
             return s.toString()

@@ -1,5 +1,7 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
+
 import java.lang.reflect.Array
 
 /**
@@ -28,6 +30,7 @@ import java.lang.reflect.Array
  *         See the License for the specific language governing permissions and
  *         limitations under the License.*
  */
+@CompileStatic
 class JsonObject<K, V> extends LinkedHashMap<K, V>
 {
     private boolean isMap = false
@@ -253,7 +256,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
             Object[] items = (Object[]) get("@items")
             return items == null ? 0 : items.length
         }
-        throw new IllegalStateException("getLength() called on a non-collection, line " + line + ", col " + col)
+        throw new IllegalStateException("getLength() called on a non-collection, line " + line + ", col " + column)
     }
 
     public Class getComponentType()
@@ -291,7 +294,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
         }
         else
         {
-            throw new IllegalStateException("char[] should only have one String in the [], found " + items.length + ", line " + line + ", col " + col)
+            throw new IllegalStateException("char[] should only have one String in the [], found " + items.length + ", line " + line + ", col " + column)
         }
     }
 
@@ -347,7 +350,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
             }
             else
             {
-                throw new IllegalStateException("JsonObject with @items, but no array [] associated to it, line " + line + ", col " + col)
+                throw new IllegalStateException("JsonObject with @items, but no array [] associated to it, line " + line + ", column " + column)
             }
         }
         else if (containsKey("@ref"))
