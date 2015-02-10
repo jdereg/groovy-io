@@ -11,6 +11,7 @@ import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.lang.reflect.TypeVariable
 import java.sql.Timestamp
+import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -68,40 +69,40 @@ class GroovyJsonReader implements Closeable
     private static final String EMPTY_OBJECT = "~!o~";  // compared with ==
     private static final Character[] charCache = new Character[128];
     private static final Byte[] byteCache = new Byte[256];
-    private static final Map<String, String> stringCache = new HashMap<>()
+    private static final Map<String, String> stringCache = new ConcurrentHashMap<>()
     private static final Set<Class> prims = new HashSet<>()
-    private static final Map<Class, Object[]> constructors = new HashMap<>()
-    private static final Map<String, Class> nameToClass = new HashMap<>()
+    private static final Map<Class, Object[]> constructors = new ConcurrentHashMap<>()
+    private static final Map<String, Class> nameToClass = new ConcurrentHashMap<>()
     private static final Class[] emptyClassArray = [] as Class[]
-    private static final List<Object[]> readers = new ArrayList<>()
+    private static final List<Object[]> readers = []
     private static final Set<Class> notCustom = new HashSet<>()
-    private static final Map<String, String> months = new LinkedHashMap<>()
-    private static final Map<Class, ClassFactory> factory = new LinkedHashMap<>()
-    private static final String days = "(monday|mon|tuesday|tues|tue|wednesday|wed|thursday|thur|thu|friday|fri|saturday|sat|sunday|sun)"; // longer before shorter matters
-    private static final String mos = "(January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)";
-    private static final Pattern datePattern1 = Pattern.compile("(\\d{4})[./-](\\d{1,2})[./-](\\d{1,2})")
-    private static final Pattern datePattern2 = Pattern.compile("(\\d{1,2})[./-](\\d{1,2})[./-](\\d{4})")
-    private static final Pattern datePattern3 = Pattern.compile(mos + "[ ]*[,]?[ ]*(\\d{1,2})(st|nd|rd|th|)[ ]*[,]?[ ]*(\\d{4})", Pattern.CASE_INSENSITIVE)
-    private static final Pattern datePattern4 = Pattern.compile("(\\d{1,2})(st|nd|rd|th|)[ ]*[,]?[ ]*" + mos + "[ ]*[,]?[ ]*(\\d{4})", Pattern.CASE_INSENSITIVE)
-    private static final Pattern datePattern5 = Pattern.compile("(\\d{4})[ ]*[,]?[ ]*" + mos + "[ ]*[,]?[ ]*(\\d{1,2})(st|nd|rd|th|)", Pattern.CASE_INSENSITIVE)
-    private static final Pattern datePattern6 = Pattern.compile(days+"[ ]+" + mos + "[ ]+(\\d{1,2})[ ]+(\\d{2}:\\d{2}:\\d{2})[ ]+[A-Z]{1,3}\\s+(\\d{4})", Pattern.CASE_INSENSITIVE)
-    private static final Pattern timePattern1 = Pattern.compile("(\\d{2})[.:](\\d{2})[.:](\\d{2})[.](\\d{1,10})([+-]\\d{2}[:]?\\d{2}|Z)?")
-    private static final Pattern timePattern2 = Pattern.compile("(\\d{2})[.:](\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?")
-    private static final Pattern timePattern3 = Pattern.compile("(\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?")
+    private static final Map<String, String> months = [:]
+    private static final Map<Class, ClassFactory> factory = [:]
+    private static final String days = '(monday|mon|tuesday|tues|tue|wednesday|wed|thursday|thur|thu|friday|fri|saturday|sat|sunday|sun)'; // longer before shorter matters
+    private static final String mos = '(January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)';
+    private static final Pattern datePattern1 = Pattern.compile('(\\d{4})[./-](\\d{1,2})[./-](\\d{1,2})')
+    private static final Pattern datePattern2 = Pattern.compile('(\\d{1,2})[./-](\\d{1,2})[./-](\\d{4})')
+    private static final Pattern datePattern3 = Pattern.compile(mos + '[ ]*[,]?[ ]*(\\d{1,2})(st|nd|rd|th|)[ ]*[,]?[ ]*(\\d{4})', Pattern.CASE_INSENSITIVE)
+    private static final Pattern datePattern4 = Pattern.compile('(\\d{1,2})(st|nd|rd|th|)[ ]*[,]?[ ]*' + mos + '[ ]*[,]?[ ]*(\\d{4})', Pattern.CASE_INSENSITIVE)
+    private static final Pattern datePattern5 = Pattern.compile('(\\d{4})[ ]*[,]?[ ]*' + mos + '[ ]*[,]?[ ]*(\\d{1,2})(st|nd|rd|th|)', Pattern.CASE_INSENSITIVE)
+    private static final Pattern datePattern6 = Pattern.compile(days+ '[ ]+' + mos + '[ ]+(\\d{1,2})[ ]+(\\d{2}:\\d{2}:\\d{2})[ ]+[A-Z]{1,3}\\s+(\\d{4})', Pattern.CASE_INSENSITIVE)
+    private static final Pattern timePattern1 = Pattern.compile('(\\d{2})[.:](\\d{2})[.:](\\d{2})[.](\\d{1,10})([+-]\\d{2}[:]?\\d{2}|Z)?')
+    private static final Pattern timePattern2 = Pattern.compile('(\\d{2})[.:](\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?')
+    private static final Pattern timePattern3 = Pattern.compile('(\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?')
     private static final Pattern dayPattern = Pattern.compile(days, Pattern.CASE_INSENSITIVE)
-    private static final Pattern extraQuotes = Pattern.compile("([\"]*)([^\"]*)([\"]*)")
-    private static final Collection unmodifiableCollection = Collections.unmodifiableCollection(new ArrayList())
+    private static final Pattern extraQuotes = Pattern.compile('(["]*)([^"]*)(["]*)')
+    private static final Collection unmodifiableCollection = Collections.unmodifiableCollection([])
     private static final Collection unmodifiableSet = Collections.unmodifiableSet(new HashSet())
     private static final Collection unmodifiableSortedSet = Collections.unmodifiableSortedSet(new TreeSet())
     private static final Map unmodifiableMap = Collections.unmodifiableMap(new HashMap())
     private static final Map unmodifiableSortedMap = Collections.unmodifiableSortedMap(new TreeMap())
 
-    private final Map<Long, JsonObject> _objsRead = new LinkedHashMap<>()
-    private final Collection<UnresolvedReference> unresolvedRefs = new ArrayList<>()
-    private final Collection<Object[]> prettyMaps = new ArrayList<>()
-    private final FastPushbackReader input;
-    private boolean useMaps = false;
-    private final char[] numBuf = new char[256];
+    private final Map<Long, JsonObject> _objsRead = [:]
+    private final Collection<UnresolvedReference> unresolvedRefs = []
+    private final Collection<Object[]> prettyMaps = []
+    private final FastPushbackReader input
+    private boolean useMaps = false
+    private final char[] numBuf = new char[256]
     private final StringBuilder strBuf = new StringBuilder()
 
     static final ThreadLocal<FastPushbackReader> threadInput = new ThreadLocal<>()

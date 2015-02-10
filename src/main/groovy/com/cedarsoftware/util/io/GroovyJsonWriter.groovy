@@ -63,7 +63,7 @@ class GroovyJsonWriter implements Closeable, Flushable
     public static final String FIELD_SPECIFIERS = "FIELD_SPECIFIERS"   // Set value to a Map<Class, List<String>> which will be used to control which fields on a class are output
     public static final String ENUM_PUBLIC_ONLY = "ENUM_PUBLIC_ONLY" // If set, indicates that private variables of ENUMs are not to be serialized
     private static final Map<String, ClassMeta> classMetaCache = new ConcurrentHashMap<>()
-    private static final List<Object[]> writers = new ArrayList<>()
+    private static final List<Object[]> writers = []
     private static final Set<Class> notCustom = new HashSet<>()
     private static final Object[] byteStrings = new Object[256]
     private static final String newLine = System.getProperty("line.separator")
@@ -448,7 +448,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 			if (clz == classToWrite)
             {
 				closestWriter = (JsonTypeWriter) item[1]
-				break;
+				break
 			}
 			int distance = getDistance(clz, classToWrite)
 			if (distance < minDistance)
@@ -976,40 +976,40 @@ class GroovyJsonWriter implements Closeable, Flushable
         {
             case "java.lang.Boolean":
                 output.write("boolean")
-                break;
+                break
             case "java.lang.Byte":
                 output.write("byte")
-                break;
+                break
             case "java.lang.Character":
                 output.write("char")
-                break;
+                break
             case "java.lang.Class":
                 output.write("class")
-                break;
+                break
             case "java.lang.Double":
                 output.write("double")
-                break;
+                break
             case "java.lang.Float":
                 output.write("float")
-                break;
+                break
             case "java.lang.Integer":
                 output.write("int")
-                break;
+                break
             case "java.lang.Long":
                 output.write("long")
-                break;
+                break
             case "java.lang.Short":
                 output.write("short")
-                break;
+                break
             case "java.lang.String":
                 output.write("string")
-                break;
+                break
             case "java.util.Date":
                 output.write("date")
-                break;
+                break
             default:
                 output.write(c.getName())
-                break;
+                break
         }
 
         output.write('"')
@@ -2121,19 +2121,19 @@ class GroovyJsonWriter implements Closeable, Flushable
                 {
                     case (char)'\b':
                         output.write("\\b")
-                        break;
+                        break
                     case (char)'\f':
                         output.write("\\f")
-                        break;
+                        break
                     case (char)'\n':
                         output.write("\\n")
-                        break;
+                        break
                     case (char)'\r':
                         output.write("\\r")
-                        break;
+                        break
                     case (char)'\t':
                         output.write("\\t")
-                        break;
+                        break
                     default:
                         String hex = Integer.toHexString((int)c)
                         output.write("\\u")
@@ -2143,7 +2143,7 @@ class GroovyJsonWriter implements Closeable, Flushable
                             output.write('0')
                         }
                         output.write(hex)
-                        break;
+                        break
                 }
             }
             else if (c == (char)'\\' || c == (char)'"')
