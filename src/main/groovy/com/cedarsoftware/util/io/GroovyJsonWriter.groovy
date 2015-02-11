@@ -67,10 +67,12 @@ class GroovyJsonWriter implements Closeable, Flushable
             (String.class):new JsonStringWriter(),
             (Date.class):new DateWriter(),
             (BigInteger.class):new BigIntegerWriter(),
+            (BigDecimal.class):new BigDecimalWriter(),
             (java.sql.Date.class):new DateWriter(),
             (Timestamp.class):new TimestampWriter(),
             (Calendar.class):new CalendarWriter(),
             (TimeZone.class):new TimeZoneWriter(),
+            (Locale.class):new LocaleWriter(),
             (Class.class):new ClassWriter(),
             (StringBuilder.class):new StringBuilderWriter(),
             (StringBuffer.class):new StringBufferWriter()
@@ -96,22 +98,6 @@ class GroovyJsonWriter implements Closeable, Flushable
         {
             return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
         }
-    }
-
-    static
-    {   // Add customer writers (these make common classes more succinct)
-        addWriter(String.class, new JsonStringWriter())
-        addWriter(Date.class, new DateWriter())
-        addWriter(BigInteger.class, new BigIntegerWriter())
-        addWriter(BigDecimal.class, new BigDecimalWriter())
-        addWriter(java.sql.Date.class, new DateWriter())
-        addWriter(Timestamp.class, new TimestampWriter())
-        addWriter(Calendar.class, new CalendarWriter())
-        addWriter(TimeZone.class, new TimeZoneWriter())
-        addWriter(Locale.class, new LocaleWriter())
-        addWriter(Class.class, new ClassWriter())
-        addWriter(StringBuilder.class, new StringBuilderWriter())
-        addWriter(StringBuffer.class, new StringBufferWriter())
     }
 
     static
@@ -237,7 +223,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
                 for (String field : fields)
                 {
-                    Field f = meta.get(field)
+                    Field f = meta[field]
                     if (f == null)
                     {
                         throw new IllegalArgumentException("Unable to locate field: " + field + " on class: " + clazz.getName() + ". Make sure the fields in the FIELD_SPECIFIERS map existing on the associated class.")
@@ -246,7 +232,7 @@ class GroovyJsonWriter implements Closeable, Flushable
                 }
                 copy[(clazz)] = newList
             }
-            args.put(FIELD_SPECIFIERS, copy)
+            args[FIELD_SPECIFIERS] = copy
         }
 
         try
@@ -261,12 +247,12 @@ class GroovyJsonWriter implements Closeable, Flushable
 
     public static boolean isPublicEnumsOnly()
     {
-        return isTrue(_args.get()[(ENUM_PUBLIC_ONLY)])
+        return isTrue(_args.get()[ENUM_PUBLIC_ONLY])
     }
 
     public static boolean isPrettyPrint()
     {
-        return isTrue(_args.get()[(PRETTY_PRINT)])
+        return isTrue(_args.get()[PRETTY_PRINT])
     }
 
     private static boolean isTrue(Object setting)
@@ -284,7 +270,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             return ((Number)setting).intValue() != 0;
         }
 
-        return false;
+        return false
     }
 
     protected void tabIn() throws IOException
@@ -306,7 +292,7 @@ class GroovyJsonWriter implements Closeable, Flushable
     {
         if (!isPrettyPrint())
         {
-            return;
+            return
         }
         output.write(newLine)
         depth += delta;
@@ -328,7 +314,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         while (curr != a)
         {
             distance++;
-            curr = curr.getSuperclass()
+            curr = curr.superclass
             if (curr == null)
             {
                 return Integer.MAX_VALUE;
@@ -342,7 +328,7 @@ class GroovyJsonWriter implements Closeable, Flushable
     {
         Set<Class<?>> possibleCandidates = new LinkedHashSet<>()
 
-        Class<?>[] interfaces = from.getInterfaces()
+        Class<?>[] interfaces = from.interfaces
         // is the interface direct inherited or via interfaces extends interface?
         for (Class<?> interfase : interfaces)
         {
@@ -358,9 +344,9 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
 
         // it is also possible, that the interface is included in superclasses
-        if (from.getSuperclass() != null  && to.isAssignableFrom(from.getSuperclass()))
+        if (from.superclass != null  && to.isAssignableFrom(from.superclass))
         {
-            possibleCandidates.add(from.getSuperclass())
+            possibleCandidates.add(from.superclass)
         }
 
         int minimum = Integer.MAX_VALUE;
@@ -524,11 +510,11 @@ class GroovyJsonWriter implements Closeable, Flushable
         public void write(Object obj, boolean showType, Writer output) throws IOException
         {
             Date date = (Date)obj;
-            Object dateFormat = _args.get()[(DATE_FORMAT)]
+            Object dateFormat = _args.get()[DATE_FORMAT]
             if (dateFormat instanceof String)
             {   // Passed in as String, turn into a SimpleDateFormat instance to be used throughout this stream write.
                 dateFormat = new SimpleDateFormat((String) dateFormat, Locale.ENGLISH)
-                _args.get()[(DATE_FORMAT)] = dateFormat
+                _args.get()[DATE_FORMAT] = dateFormat
             }
             if (showType)
             {
@@ -749,15 +735,15 @@ class GroovyJsonWriter implements Closeable, Flushable
                     if (id == ZERO)
                     {   // 2nd time this object has been seen, so give it a unique ID and mark it referenced
                         id = identity++;
-                        visited.put(obj, id)
-                        referenced.put(obj, id)
+                        visited[obj] = id
+                        referenced[obj] = id
                     }
                     continue;
                 }
                 else
                 {   // Initially, mark an object with 0 as the ID, in case it is never referenced,
                     // we don't waste the memory to store a Long instance that is never used.
-                    visited.put(obj, ZERO)
+                    visited[obj] = ZERO
                 }
             }
 
@@ -824,7 +810,7 @@ class GroovyJsonWriter implements Closeable, Flushable
      */
     protected void traceFields(Deque<Object> stack, Object obj)
     {
-        Map<Class, List<Field>> fieldSpecifiers = (Map) _args.get()[(FIELD_SPECIFIERS)]
+        Map<Class, List<Field>> fieldSpecifiers = (Map) _args.get()[FIELD_SPECIFIERS]
 
         // If caller has special Field specifier for a given class
         // then use it, otherwise use reflection.
@@ -1136,7 +1122,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
         else
         {
-            final Class componentClass = array.getClass().getComponentType()
+            final Class componentClass = array.getClass().componentType
             final boolean isPrimitiveArray = GroovyJsonReader.isPrimitive(componentClass)
             final boolean isObjectArray = ([] as Object[]).class == arrayType;
 
@@ -1370,8 +1356,8 @@ class GroovyJsonWriter implements Closeable, Flushable
             return;
         }
 
-        int len = jObj.getLength()
-        String type = jObj.getType()
+        int len = jObj.length
+        String type = jObj.type
         Class arrayClass;
 
         if (type == null || ([] as Object[]).class.getName().equals(type))
@@ -1397,7 +1383,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
         if (referenced)
         {
-            writeId(Long.toString(jObj.getId()))
+            writeId(Long.toString(jObj.id))
             output.write(',')
             newLine()
         }
@@ -1497,11 +1483,11 @@ class GroovyJsonWriter implements Closeable, Flushable
             return;
         }
 
-        String type = jObj.getType()
+        String type = jObj.type
         Class colClass = GroovyJsonReader.classForName(type)
         boolean referenced = objsReferenced.containsKey(jObj) && jObj.hasId()
         final Writer output = this.out;
-        int len = jObj.getLength()
+        int len = jObj.length
 
         if (referenced || showType || len == 0)
         {
@@ -1511,7 +1497,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
         if (referenced)
         {
-            writeId(String.valueOf(jObj.getId()))
+            writeId(String.valueOf(jObj.id))
         }
 
         if (showType)
@@ -1535,7 +1521,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
         beginCollection(showType, referenced)
 
-        Object[] items = (Object[]) jObj["@items"]
+        Object[] items = (Object[]) jObj['@items']
         final int itemsLen = items.length
         final int itemsLenMinus1 = itemsLen - 1
 
@@ -1573,7 +1559,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         tabIn()
         if (referenced)
         {
-            writeId(String.valueOf(jObj.getId()))
+            writeId(String.valueOf(jObj.id))
         }
 
         if (showType)
@@ -1583,7 +1569,7 @@ class GroovyJsonWriter implements Closeable, Flushable
                 output.write(',')
                 newLine()
             }
-            String type = jObj.getType()
+            String type = jObj.type
             if (type != null)
             {
                 Class mapClass = GroovyJsonReader.classForName(type)
@@ -1593,7 +1579,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             }
             else
             {   // type not displayed
-                showType = false;
+                showType = false
             }
         }
 
@@ -1601,7 +1587,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         {   // Empty
             tabOut()
             output.write('}')
-            return;
+            return
         }
 
         if (showType)
@@ -1669,7 +1655,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
         if (referenced)
         {
-            writeId(String.valueOf(jObj.getId()))
+            writeId(String.valueOf(jObj.id))
         }
 
         if (showType)
@@ -1679,7 +1665,7 @@ class GroovyJsonWriter implements Closeable, Flushable
                 output.write(',')
                 newLine()
             }
-            String type = jObj.getType()
+            String type = jObj.type
             if (type != null)
             {
                 Class mapClass = GroovyJsonReader.classForName(type)
@@ -1726,7 +1712,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         tabIn()
         if (referenced)
         {
-            writeId(String.valueOf(jObj.getId()))
+            writeId(String.valueOf(jObj.id))
         }
 
         if (showType)
@@ -1737,9 +1723,9 @@ class GroovyJsonWriter implements Closeable, Flushable
                 newLine()
             }
             output.write('"@type":"')
-            output.write(jObj.getType())
+            output.write(jObj.type)
             output.write('"')
-            try  { type = GroovyJsonReader.classForName(jObj.getType()) }
+            try  { type = GroovyJsonReader.classForName(jObj.type) }
             catch(Exception ignored) { type = null; }
         }
 
@@ -1761,11 +1747,11 @@ class GroovyJsonWriter implements Closeable, Flushable
         while (i.hasNext())
         {
             Entry<String, Object>entry = i.next()
-            final String fieldName = entry.getKey()
+            final String fieldName = entry.key
             output.write('"')
             output.write(fieldName)
             output.write('":')
-            Object value = entry.getValue()
+            Object value = entry.value
 
             if (value == null)
             {
@@ -1806,8 +1792,8 @@ class GroovyJsonWriter implements Closeable, Flushable
         if (type != null)
         {
             ClassMeta meta = getDeepDeclaredFields(type)
-            Field field = meta.get(fieldName)
-            return field != null && (value.getClass() == field.getType())
+            Field field = meta[fieldName]
+            return field != null && (value.getClass() == field.type)
         }
         return false;
     }
@@ -2032,7 +2018,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             first = false;
         }
 
-        final Map<Class, List<Field>> fieldSpecifiers = (Map) _args.get().get(FIELD_SPECIFIERS)
+        final Map<Class, List<Field>> fieldSpecifiers = (Map) _args.get()[FIELD_SPECIFIERS]
         final List<Field> externallySpecifiedFields = getFieldsUsingSpecifier(obj.getClass(), fieldSpecifiers)
         if (externallySpecifiedFields != null)
         {   // Caller is using associating a class name to a set of fields for the given class (allows field reductions)
@@ -2064,7 +2050,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
 
         int modifiers = field.modifiers
-        if (field.getDeclaringClass().isEnum() && !Modifier.isPublic(modifiers) && isPublicEnumsOnly())
+        if (field.declaringClass.isEnum() && !Modifier.isPublic(modifiers) && isPublicEnumsOnly())
         {
             return first
         }
@@ -2094,7 +2080,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             return false;
         }
 
-        Class type = field.getType()
+        Class type = field.type
         boolean forceType = o.getClass() != type;     // If types are not exactly the same, write "@type" field
 
         if (GroovyJsonReader.isPrimitive(type))
@@ -2131,23 +2117,23 @@ class GroovyJsonWriter implements Closeable, Flushable
                 switch (c)
                 {
                     case (char)'\b':
-                        output.write("\\b")
+                        output.write('\\b')
                         break
                     case (char)'\f':
-                        output.write("\\f")
+                        output.write('\\f')
                         break
                     case (char)'\n':
-                        output.write("\\n")
+                        output.write('\\n')
                         break
                     case (char)'\r':
-                        output.write("\\r")
+                        output.write('\\r')
                         break
                     case (char)'\t':
-                        output.write("\\t")
+                        output.write('\\t')
                         break
                     default:
                         String hex = Integer.toHexString((int)c)
-                        output.write("\\u")
+                        output.write('\\u')
                         final int pad = 4 - hex.length()
                         for (int k = 0; k < pad; k++)
                         {
@@ -2177,7 +2163,7 @@ class GroovyJsonWriter implements Closeable, Flushable
      */
     static ClassMeta getDeepDeclaredFields(Class c)
     {
-        ClassMeta classInfo = classMetaCache.get(c.getName())
+        ClassMeta classInfo = classMetaCache[c.getName()]
         if (classInfo != null)
         {
             return classInfo;
@@ -2190,13 +2176,13 @@ class GroovyJsonWriter implements Closeable, Flushable
         {
             try
             {
-                Field[] local = curr.getDeclaredFields()
+                Field[] local = curr.declaredFields
 
                 for (Field field : local)
                 {
-                    if ((field.getModifiers() & Modifier.STATIC) == 0)
+                    if ((field.modifiers & Modifier.STATIC) == 0)
                     {   // speed up: do not process static fields.
-                        if ("metaClass".equals(field.getName()) && "groovy.lang.MetaClass".equals(field.getType().getName()))
+                        if ("metaClass".equals(field.getName()) && "groovy.lang.MetaClass".equals(field.type.name))
                         {   // Skip Groovy metaClass field if present
                             continue;
                         }
@@ -2205,17 +2191,17 @@ class GroovyJsonWriter implements Closeable, Flushable
                         {
                             try
                             {
-                                field.setAccessible(true)
+                                field.accessible = true
                             }
                             catch (Exception ignored) { }
                         }
-                        if (classInfo.containsKey(field.getName()))
+                        if (classInfo.containsKey(field.name))
                         {
-                            classInfo.put(curr.getName() + '.' + field.getName(), field)
+                            classInfo[curr.name + '.' + field.name] = field
                         }
                         else
                         {
-                            classInfo.put(field.getName(), field)
+                            classInfo[field.name] = field
                         }
                     }
                 }
@@ -2229,7 +2215,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             curr = curr.superclass
         }
 
-        classMetaCache.put(c.getName(), classInfo)
+        classMetaCache[c.getName()] = classInfo
         return classInfo;
     }
 
