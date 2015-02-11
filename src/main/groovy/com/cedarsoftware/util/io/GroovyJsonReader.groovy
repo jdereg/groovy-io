@@ -60,23 +60,118 @@ import java.util.regex.Pattern
 @CompileStatic
 class GroovyJsonReader implements Closeable
 {
-    private static final int STATE_READ_START_OBJECT = 0;
-    private static final int STATE_READ_FIELD = 1;
-    private static final int STATE_READ_VALUE = 2;
-    private static final int STATE_READ_POST_VALUE = 3;
-    private static final int SNIPPET_LENGTH = 200;
-    private static final String EMPTY_ARRAY = "~!a~";  // compared with ==
-    private static final String EMPTY_OBJECT = "~!o~";  // compared with ==
-    private static final Character[] charCache = new Character[128];
-    private static final Byte[] byteCache = new Byte[256];
-    private static final Map<String, String> stringCache = new ConcurrentHashMap<>()
-    private static final Set<Class> prims = new HashSet<>()
+    private static final int STATE_READ_START_OBJECT = 0
+    private static final int STATE_READ_FIELD = 1
+    private static final int STATE_READ_VALUE = 2
+    private static final int STATE_READ_POST_VALUE = 3
+    private static final int SNIPPET_LENGTH = 200
+    private static final String EMPTY_ARRAY = '~!a~'  // compared with ==
+    private static final String EMPTY_OBJECT = '~!o~'  // compared with ==
+    private static final Character[] charCache = new Character[128]
+    private static final Byte[] byteCache = new Byte[256]
     private static final Map<Class, Object[]> constructors = new ConcurrentHashMap<>()
-    private static final Map<String, Class> nameToClass = new ConcurrentHashMap<>()
+    private static final Map<String, String> stringCache = [
+            '':'',
+            'true':'true',
+            'True':'True',
+            'TRUE':'TRUE',
+            'false':'false',
+            'False':'False',
+            'FALSE':'FALSE',
+            'null':'null',
+            'yes':'yes',
+            'Yes':'Yes',
+            'YES':'YES',
+            'no':'no',
+            'No':'No',
+            'NO':'NO',
+            'on':'on',
+            'On':'On',
+            'ON':'ON',
+            'off':'off',
+            'Off':'Off',
+            'OFF':'OFF',
+            '@id':'@id',
+            '@ref':'@ref',
+            '@items':'@items',
+            '@type':'@type',
+            '@keys':'@keys',
+            '0':'0',
+            '1':'1',
+            '2':'2',
+            '3':'3',
+            '4':'4',
+            '5':'5',
+            '6':'6',
+            '7':'7',
+            '8':'8',
+            '9':'9'
+    ]
+    private static final Set<Class> prims = [
+            Byte.class,
+            Short.class,
+            Integer.class,
+            Long.class,
+            Float.class,
+            Double.class,
+            Boolean.class,
+            Character.class
+    ] as Set
+    private static final Map<String, Class> nameToClass = [
+            'string':String.class,
+            'boolean':boolean.class,
+            'char':char.class,
+            'byte':byte.class,
+            'short':short.class,
+            'int':int.class,
+            'long':long.class,
+            'float':float.class,
+            'double':double.class,
+            'date':Date.class,
+            'class':Class.class
+    ]
     private static final Class[] emptyClassArray = [] as Class[]
-    private static final List<Object[]> readers = []
+    private static final Map<Class, JsonTypeReader> readers = [
+            (String.class):new StringReader(),
+            (Date.class):new DateReader(),
+            (BigInteger.class):new BigIntegerReader(),
+            (BigDecimal.class):new BigDecimalReader(),
+            (java.sql.Date.class):new SqlDateReader(),
+            (Timestamp.class):new TimestampReader(),
+            (Calendar.class):new CalendarReader(),
+            (TimeZone.class):new TimeZoneReader(),
+            (Locale.class):new LocaleReader(),
+            (Class.class):new ClassReader(),
+            (StringBuilder.class):new StringBuilderReader(),
+            (StringBuffer.class):new StringBufferReader()
+    ]
     private static final Set<Class> notCustom = new HashSet<>()
-    private static final Map<String, String> months = [:]
+    private static final Map<String, String> months = [
+            'jan':'1',
+            'january':'1',
+            'feb':'2',
+            'february':'2',
+            'mar':'3',
+            'march':'3',
+            'apr':'4',
+            'april':'4',
+            'may':'5',
+            'jun':'6',
+            'june':'6',
+            'jul':'7',
+            'july':'7',
+            'aug':'8',
+            'august':'8',
+            'sep':'9',
+            'sept':'9',
+            'september':'9',
+            'oct':'10',
+            'october':'10',
+            'nov':'11',
+            'november':'11',
+            'dec':'12',
+            'december':'12'
+    ]
     private static final Map<Class, ClassFactory> factory = [:]
     private static final String days = '(monday|mon|tuesday|tues|tue|wednesday|wed|thursday|thur|thu|friday|fri|saturday|sat|sunday|sun)'; // longer before shorter matters
     private static final String mos = '(January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)';
@@ -140,77 +235,6 @@ class GroovyJsonReader implements Closeable
             byteCache[i] = (byte) (i - 128)
         }
 
-        // Save heap memory by re-using common strings (String's immutable)
-        stringCache.put("", "")
-        stringCache.put("true", "true")
-        stringCache.put("True", "True")
-        stringCache.put("TRUE", "TRUE")
-        stringCache.put("false", "false")
-        stringCache.put("False", "False")
-        stringCache.put("FALSE", "FALSE")
-        stringCache.put("null", "null")
-        stringCache.put("yes", "yes")
-        stringCache.put("Yes", "Yes")
-        stringCache.put("YES", "YES")
-        stringCache.put("no", "no")
-        stringCache.put("No", "No")
-        stringCache.put("NO", "NO")
-        stringCache.put("on", "on")
-        stringCache.put("On", "On")
-        stringCache.put("ON", "ON")
-        stringCache.put("off", "off")
-        stringCache.put("Off", "Off")
-        stringCache.put("OFF", "OFF")
-        stringCache.put("@id", "@id")
-        stringCache.put("@ref", "@ref")
-        stringCache.put("@items", "@items")
-        stringCache.put("@type", "@type")
-        stringCache.put("@keys", "@keys")
-        stringCache.put("0", "0")
-        stringCache.put("1", "1")
-        stringCache.put("2", "2")
-        stringCache.put("3", "3")
-        stringCache.put("4", "4")
-        stringCache.put("5", "5")
-        stringCache.put("6", "6")
-        stringCache.put("7", "7")
-        stringCache.put("8", "8")
-        stringCache.put("9", "9")
-
-        prims.add(Byte.class)
-        prims.add(Integer.class)
-        prims.add(Long.class)
-        prims.add(Double.class)
-        prims.add(Character.class)
-        prims.add(Float.class)
-        prims.add(Boolean.class)
-        prims.add(Short.class)
-
-        nameToClass.put("string", String.class)
-        nameToClass.put("boolean", boolean.class)
-        nameToClass.put("char", char.class)
-        nameToClass.put("byte", byte.class)
-        nameToClass.put("short", short.class)
-        nameToClass.put("int", int.class)
-        nameToClass.put("long", long.class)
-        nameToClass.put("float", float.class)
-        nameToClass.put("double", double.class)
-        nameToClass.put("date", Date.class)
-        nameToClass.put("class", Class.class)
-
-        addReader(String.class, new StringReader())
-        addReader(Date.class, new DateReader())
-        addReader(BigInteger.class, new BigIntegerReader())
-        addReader(BigDecimal.class, new BigDecimalReader())
-        addReader(java.sql.Date.class, new SqlDateReader())
-        addReader(Timestamp.class, new TimestampReader())
-        addReader(Calendar.class, new CalendarReader())
-        addReader(TimeZone.class, new TimeZoneReader())
-        addReader(Locale.class, new LocaleReader())
-        addReader(Class.class, new ClassReader())
-        addReader(StringBuilder.class, new StringBuilderReader())
-        addReader(StringBuffer.class, new StringBufferReader())
-
         ClassFactory colFactory = new CollectionFactory()
         assignInstantiator(Collection.class, colFactory)
         assignInstantiator(List.class, colFactory)
@@ -220,32 +244,6 @@ class GroovyJsonReader implements Closeable
         ClassFactory mapFactory = new MapFactory()
         assignInstantiator(Map.class, mapFactory)
         assignInstantiator(SortedMap.class, mapFactory)
-
-        // Month name to number map
-        months.put("jan", "1")
-        months.put("january", "1")
-        months.put("feb", "2")
-        months.put("february", "2")
-        months.put("mar", "3")
-        months.put("march", "3")
-        months.put("apr", "4")
-        months.put("april", "4")
-        months.put("may", "5")
-        months.put("jun", "6")
-        months.put("june", "6")
-        months.put("jul", "7")
-        months.put("july", "7")
-        months.put("aug", "8")
-        months.put("august", "8")
-        months.put("sep", "9")
-        months.put("sept", "9")
-        months.put("september", "9")
-        months.put("oct", "10")
-        months.put("october", "10")
-        months.put("nov", "11")
-        months.put("november", "11")
-        months.put("dec", "12")
-        months.put("december", "12")
     }
 
     public interface ClassFactory
@@ -265,7 +263,7 @@ class GroovyJsonReader implements Closeable
      */
     public static void assignInstantiator(Class c, ClassFactory f)
     {
-        factory.put(c, f)
+        factory[(c)] = f
     }
 
     /**
@@ -308,7 +306,7 @@ class GroovyJsonReader implements Closeable
             }
             else if (Map.class.isAssignableFrom(c))
             {
-                return new LinkedHashMap()
+                return [:]
             }
             throw new RuntimeException("MapFactory handed Class for which it was not expecting: " + c.getName())
         }
@@ -319,7 +317,7 @@ class GroovyJsonReader implements Closeable
         public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
         {
             JsonObject jObj = (JsonObject)o;
-            Object zone = jObj.get("zone")
+            Object zone = jObj.zone
             if (zone == null)
             {
                 error("java.util.TimeZone must specify 'zone' field")
@@ -333,23 +331,23 @@ class GroovyJsonReader implements Closeable
         public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
         {
             JsonObject jObj = (JsonObject) o;
-            Object language = jObj.get("language")
+            Object language = jObj.language
             if (language == null)
             {
                 error("java.util.Locale must specify 'language' field")
             }
-            Object country = jObj.get("country")
-            Object variant = jObj.get("variant")
+            Object country = jObj.country
+            Object variant = jObj.variant
             if (country == null)
             {
-                return jObj.setTarget(new Locale((String) language))
+                return jObj.target = new Locale((String) language)
             }
             if (variant == null)
             {
-                return jObj.setTarget(new Locale((String) language, (String) country))
+                return jObj.target = new Locale((String) language, (String) country)
             }
 
-            return jObj.setTarget(new Locale((String) language, (String) country, (String) variant))
+            return jObj.target = new Locale((String) language, (String) country, (String) variant)
         }
     }
 
@@ -361,30 +359,30 @@ class GroovyJsonReader implements Closeable
             try
             {
                 JsonObject jObj = (JsonObject) o;
-                time = (String) jObj.get("time")
+                time = (String) jObj.time
                 if (time == null)
                 {
                     error("Calendar missing 'time' field")
                 }
                 Date date = GroovyJsonWriter._dateFormat.get().parse(time)
                 Class c;
-                if (jObj.getTarget() != null)
+                if (jObj.target != null)
                 {
                     c = jObj.getTargetClass()
                 }
                 else
                 {
-                    Object type = jObj.getType()
+                    Object type = jObj.type
                     c = classForName((String) type)
                 }
 
                 Calendar calendar = (Calendar) newInstance(c)
-                calendar.setTime(date)
-                jObj.setTarget(calendar)
-                String zone = (String) jObj.get("zone")
+                calendar.time = date
+                jObj.target = calendar
+                String zone = (String) jObj.zone
                 if (zone != null)
                 {
-                    calendar.setTimeZone(TimeZone.getTimeZone(zone))
+                    calendar.timeZone = TimeZone.getTimeZone(zone)
                 }
                 return calendar;
             }
@@ -410,7 +408,7 @@ class GroovyJsonReader implements Closeable
             else if (o instanceof JsonObject)
             {
                 JsonObject jObj = (JsonObject) o;
-                Object val = jObj.get("value")
+                Object val = jObj.value
                 if (val instanceof Long)
                 {
                     return new Date((Long) val)
@@ -510,11 +508,11 @@ class GroovyJsonReader implements Closeable
 
             if (mon != null)
             {   // Month will always be in Map, because regex forces this.
-                month = months.get(mon.trim().toLowerCase())
+                month = months[mon.trim().toLowerCase()]
             }
 
             // Determine which date pattern (Matcher) to use
-            String hour = null, min = null, sec = "00", milli = "0", tz = null;
+            String hour = null, min = null, sec = "00", milli = "0", tz = null
             remains = remains.trim()
             matcher = timePattern1.matcher(remains)
             if (matcher.find())
@@ -555,7 +553,7 @@ class GroovyJsonReader implements Closeable
                     }
                     else
                     {
-                        matcher = null;
+                        matcher = null
                     }
                 }
             }
@@ -583,23 +581,23 @@ class GroovyJsonReader implements Closeable
                 }
             }
 
-            Calendar c = Calendar.getInstance()
+            Calendar c = Calendar.instance
             c.clear()
             if (tz != null)
             {
                 if ("z".equalsIgnoreCase(tz))
                 {
-                    c.setTimeZone(TimeZone.getTimeZone("GMT"))
+                    c.timeZone = TimeZone.getTimeZone("GMT")
                 }
                 else
                 {
-                    c.setTimeZone(TimeZone.getTimeZone("GMT" + tz))
+                    c.timeZone = TimeZone.getTimeZone("GMT" + tz)
                 }
             }
 
             // Regex prevents these from ever failing to parse
             int y = Integer.parseInt(year)
-            int m = Integer.parseInt(month) - 1;    // months are 0-based
+            int m = Integer.parseInt(month) - 1    // months are 0-based
             int d = Integer.parseInt(day)
 
             if (m < 0 || m > 11)
@@ -640,7 +638,7 @@ class GroovyJsonReader implements Closeable
                 c.set(y, m, d, h, mn, s)
                 c.set(Calendar.MILLISECOND, ms)
             }
-            return c.getTime()
+            return c.time
         }
     }
 
@@ -648,7 +646,7 @@ class GroovyJsonReader implements Closeable
     {
         public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
         {
-            return new java.sql.Date(((Date) super.read(o, stack)).getTime())
+            return new java.sql.Date(((Date) super.read(o, stack)).time)
         }
     }
 
@@ -667,9 +665,9 @@ class GroovyJsonReader implements Closeable
             }
 
             JsonObject jObj = (JsonObject) o;
-            if (jObj.containsKey("value"))
+            if (jObj.containsKey('value'))
             {
-                return jObj.setTarget(jObj.get("value"))
+                return jObj.target = jObj.value
             }
             return error("String missing 'value' field")
         }
@@ -687,7 +685,7 @@ class GroovyJsonReader implements Closeable
             JsonObject jObj = (JsonObject) o;
             if (jObj.containsKey("value"))
             {
-                return jObj.setTarget(classForName((String) jObj.get("value")))
+                return jObj.target = classForName((String) jObj.value)
             }
             return error("Class missing 'value' field")
         }
@@ -702,9 +700,9 @@ class GroovyJsonReader implements Closeable
             if (o instanceof JsonObject)
             {
                 jObj = (JsonObject) o;
-                if (jObj.containsKey("value"))
+                if (jObj.containsKey('value'))
                 {
-                    value = jObj.get("value")
+                    value = jObj.value
                 }
                 else
                 {
@@ -715,12 +713,12 @@ class GroovyJsonReader implements Closeable
             if (value instanceof JsonObject)
             {
                 JsonObject valueObj = (JsonObject)value;
-                if ("java.math.BigDecimal".equals(valueObj.getType()))
+                if ("java.math.BigDecimal".equals(valueObj.type))
                 {
                     BigDecimalReader reader = new BigDecimalReader()
                     value = reader.read(value, stack)
                 }
-                else if ("java.math.BigInteger".equals(valueObj.getType()))
+                else if ("java.math.BigInteger".equals(valueObj.type))
                 {
                     value = read(value, stack)
                 }
@@ -733,7 +731,7 @@ class GroovyJsonReader implements Closeable
             BigInteger x = bigIntegerFrom(value)
             if (jObj != null)
             {
-                jObj.setTarget(x)
+                jObj.target = x
             }
 
             return x;
@@ -805,9 +803,9 @@ class GroovyJsonReader implements Closeable
             if (o instanceof JsonObject)
             {
                 jObj = (JsonObject) o;
-                if (jObj.containsKey("value"))
+                if (jObj.containsKey('value'))
                 {
-                    value = jObj.get("value")
+                    value = jObj.value
                 }
                 else
                 {
@@ -818,12 +816,12 @@ class GroovyJsonReader implements Closeable
             if (value instanceof JsonObject)
             {
                 JsonObject valueObj = (JsonObject)value;
-                if ("java.math.BigInteger".equals(valueObj.getType()))
+                if ("java.math.BigInteger".equals(valueObj.type))
                 {
                     BigIntegerReader reader = new BigIntegerReader()
                     value = reader.read(value, stack)
                 }
-                else if ("java.math.BigDecimal".equals(valueObj.getType()))
+                else if ("java.math.BigDecimal".equals(valueObj.type))
                 {
                     value = read(value, stack)
                 }
@@ -836,7 +834,7 @@ class GroovyJsonReader implements Closeable
             BigDecimal x = bigDecimalFrom(value)
             if (jObj != null)
             {
-                jObj.setTarget(x)
+                jObj.target = x
             }
             return x;
         }
@@ -901,9 +899,9 @@ class GroovyJsonReader implements Closeable
             }
 
             JsonObject jObj = (JsonObject) o;
-            if (jObj.containsKey("value"))
+            if (jObj.containsKey('value'))
             {
-                return jObj.setTarget(new StringBuilder((String) jObj.get("value")))
+                return jObj.target = new StringBuilder((String) jObj.value)
             }
             return error("StringBuilder missing 'value' field")
         }
@@ -919,9 +917,9 @@ class GroovyJsonReader implements Closeable
             }
 
             JsonObject jObj = (JsonObject) o;
-            if (jObj.containsKey("value"))
+            if (jObj.containsKey('value'))
             {
-                return jObj.setTarget(new StringBuffer((String) jObj.get("value")))
+                return jObj.target = new StringBuffer((String) jObj.value)
             }
             return error("StringBuffer missing 'value' field")
         }
@@ -932,35 +930,34 @@ class GroovyJsonReader implements Closeable
         public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
         {
             JsonObject jObj = (JsonObject) o;
-            Object time = jObj.get("time")
+            Object time = jObj.time
             if (time == null)
             {
                 error("java.sql.Timestamp must specify 'time' field")
             }
-            Object nanos = jObj.get("nanos")
+            Object nanos = jObj.nanos
             if (nanos == null)
             {
-                return jObj.setTarget(new Timestamp(Long.valueOf((String) time)))
+                return jObj.target = new Timestamp(Long.valueOf((String) time))
             }
 
             Timestamp tstamp = new Timestamp(Long.valueOf((String) time))
-            tstamp.setNanos(Integer.valueOf((String) nanos))
-            return jObj.setTarget(tstamp)
+            tstamp.nanos = Integer.valueOf((String) nanos)
+            return jObj.target = tstamp
         }
     }
 
     public static void addReader(Class c, JsonTypeReader reader)
     {
-        for (Object[] item : readers)
+        for (Map.Entry entry : readers.entrySet())
         {
-            Class clz = (Class)item[0];
-            if (clz == c)
+            if (entry.key == c)
             {
-                item[1] = reader;   // Replace reader
-                return;
+                entry.value = reader
+                return
             }
         }
-        readers.add([c, reader] as Object[])
+        readers[c] = reader
     }
 
     public static void addNotCustomReader(Class c)
@@ -1006,12 +1003,12 @@ class GroovyJsonReader implements Closeable
                 return null;
             }
 
-            if (jObj.getTarget() == null)
+            if (jObj.target == null)
             {   // '@type' parameter used
                 String typeStr = null;
                 try
                 {
-                    Object type =  jObj.getType()
+                    Object type = jObj.type
                     if (type != null)
                     {
                         typeStr = (String) type;
@@ -1054,31 +1051,32 @@ class GroovyJsonReader implements Closeable
 
         if (needsType && isJsonObject)
         {
-            ((JsonObject)o).setType(c.getName())
+            ((JsonObject)o).type = c.getName()
         }
         return closestReader.read(o, stack)
     }
 
-	private static JsonTypeReader getCustomReader(Class c) {
-		JsonTypeReader closestReader = null;
-        int minDistance = Integer.MAX_VALUE;
+	private static JsonTypeReader getCustomReader(Class c)
+    {
+		JsonTypeReader closestReader = null
+        int minDistance = Integer.MAX_VALUE
 
-        for (Object[] item : readers)
+        for (Map.Entry<Class, JsonTypeReader> entry : readers.entrySet())
         {
-            Class clz = (Class)item[0];
+            Class clz = entry.key
             if (clz == c)
             {
-                closestReader = (JsonTypeReader)item[1];
+                closestReader = entry.value
                 break
             }
             int distance = GroovyJsonWriter.getDistance(clz, c)
             if (distance < minDistance)
             {
                 minDistance = distance;
-                closestReader = (JsonTypeReader)item[1];
+                closestReader = entry.value
             }
         }
-		return closestReader;
+		return closestReader
 	}
 
     /**
@@ -1150,12 +1148,12 @@ class GroovyJsonReader implements Closeable
         if (ret != null && ret.getClass().isArray())
         {
             JsonObject retMap = new JsonObject()
-            retMap.put("@items", ret)
+            retMap['@items'] = ret
             return retMap;
 
         }
         JsonObject retMap = new JsonObject()
-        retMap.put("@items", [ret] as Object[])
+        retMap['@items'] = [ret] as Object[]
         return retMap;
     }
 
@@ -1205,9 +1203,9 @@ class GroovyJsonReader implements Closeable
         Object graph;
         if (o instanceof Object[])
         {
-            root.setType(([] as Object[]).class.getName())
-            root.setTarget(o)
-            root.put("@items", o)
+            root.type = ([] as Object[]).class.getName()
+            root.target = o
+            root['@items'] = o
             graph = convertParsedMapsToGroovy(root)
         }
         else if (o instanceof JsonObject)
@@ -1320,7 +1318,7 @@ class GroovyJsonReader implements Closeable
                 jsonObj.clear()
             }
         }
-        return root.getTarget()
+        return root.target
     }
 
     /**
@@ -1406,7 +1404,7 @@ class GroovyJsonReader implements Closeable
                 else
                 {
                     JsonObject<String, Object> jsonObject = new JsonObject<>()
-                    jsonObject.put("@items", element)
+                    jsonObject['@items'] = element
                     Array.set(array, i, createGroovyInstance(compType, jsonObject))
                     stack.addFirst(jsonObject)
                 }
@@ -1414,14 +1412,14 @@ class GroovyJsonReader implements Closeable
             else if (element instanceof JsonObject)
             {
                 JsonObject<String, Object> jsonObject = (JsonObject<String, Object>) element;
-                Long ref = (Long) jsonObject.get("@ref")
+                Long ref = (Long) jsonObject['@ref']
 
                 if (ref != null)
                 {    // Connect reference
                     JsonObject refObject = getReferencedObj(ref)
-                    if (refObject.getTarget() != null)
+                    if (refObject.target != null)
                     {   // Array element with @ref to existing object
-                        Array.set(array, i, refObject.getTarget())
+                        Array.set(array, i, refObject.target)
                     }
                     else
                     {    // Array with a forward @ref as an element
@@ -1455,7 +1453,7 @@ class GroovyJsonReader implements Closeable
 
     private JsonObject getReferencedObj(Long ref) throws IOException
     {
-        JsonObject refObject = _objsRead.get(ref)
+        JsonObject refObject = _objsRead[(ref)]
         if (refObject == null)
         {
             error("Forward reference @ref: " + ref + ", but no object defined (@id) with that value")
@@ -1498,13 +1496,13 @@ class GroovyJsonReader implements Closeable
             if (element instanceof Object[])
             {   // array element inside Collection
                 JsonObject<String, Object> jsonObject = new JsonObject<>()
-                jsonObject.put("@items", element)
+                jsonObject['@items'] = element
                 stack.addFirst(jsonObject)
             }
             else if (element instanceof JsonObject)
             {
                 JsonObject<String, Object> jsonObject = (JsonObject<String, Object>) element;
-                Long ref = (Long) jsonObject.get("@ref")
+                Long ref = (Long) jsonObject['@ref']
 
                 if (ref != null)
                 {    // connect reference
@@ -1518,11 +1516,11 @@ class GroovyJsonReader implements Closeable
             }
             idx++;
         }
-        jsonObj.setTarget(null)  // don't waste space (used for typed return, not generic Map return)
+        jsonObj.target = null  // don't waste space (used for typed return, not generic Map return)
 
         for (int i=0; i < items.length; i++)
         {
-            items[i] = copy.get(i)
+            items[i] = copy[i]
         }
     }
 
@@ -1543,7 +1541,7 @@ class GroovyJsonReader implements Closeable
         {
             return;
         }
-        Collection col = (Collection) jsonObj.getTarget()
+        Collection col = (Collection) jsonObj.target
         boolean isList = col instanceof List;
         int idx = 0;
 
@@ -1569,23 +1567,23 @@ class GroovyJsonReader implements Closeable
             else if (element.getClass().isArray())
             {
                 JsonObject jObj = new JsonObject()
-                jObj.put("@items", element)
+                jObj['@items'] = element
                 createGroovyInstance(Object.class, jObj)
-                col.add(jObj.getTarget())
+                col.add(jObj.target)
                 convertMapsToObjects(jObj)
             }
             else // if (element instanceof JsonObject)
             {
                 JsonObject jObj = (JsonObject) element;
-                Long ref = (Long) jObj.get("@ref")
+                Long ref = (Long) jObj['@ref']
 
                 if (ref != null)
                 {
                     JsonObject refObject = getReferencedObj(ref)
 
-                    if (refObject.getTarget() != null)
+                    if (refObject.target != null)
                     {
-                        col.add(refObject.getTarget())
+                        col.add(refObject.target)
                     }
                     else
                     {
@@ -1604,13 +1602,13 @@ class GroovyJsonReader implements Closeable
                     {
                         convertMapsToObjects(jObj)
                     }
-                    col.add(jObj.getTarget())
+                    col.add(jObj.target)
                 }
             }
             idx++;
         }
 
-        jsonObj.remove("@items")   // Reduce memory required during processing
+        jsonObj.remove('@items')   // Reduce memory required during processing
     }
 
     /**
@@ -1625,7 +1623,7 @@ class GroovyJsonReader implements Closeable
     {
         // Convert @keys to a Collection of Groovy objects.
         convertMapToKeysItems(jsonObj)
-        Object[] keys = (Object[]) jsonObj.get("@keys")
+        Object[] keys = (Object[]) jsonObj['@keys']
         Object[] items = jsonObj.getArray()
 
         if (keys == null || items == null)
@@ -1654,19 +1652,19 @@ class GroovyJsonReader implements Closeable
     private static Object[] buildCollection(Deque<JsonObject<String, Object>> stack, Object[] items, int size)
     {
         JsonObject jsonCollection = new JsonObject()
-        jsonCollection.put("@items", items)
+        jsonCollection['@items'] = items
         Object[] javaKeys = new Object[size];
-        jsonCollection.setTarget(javaKeys)
+        jsonCollection.target = javaKeys
         stack.addFirst(jsonCollection)
         return javaKeys;
     }
 
     protected void traverseFieldsNoObj(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj) throws IOException
     {
-        final Object target = jsonObj.getTarget()
+        final Object target = jsonObj.target
         for (Map.Entry<String, Object> e : jsonObj.entrySet())
         {
-            String key = e.getKey()
+            String key = e.key
 
             if (key.charAt(0) == '@')
             {   // Skip our own meta fields
@@ -1679,37 +1677,37 @@ class GroovyJsonReader implements Closeable
                 field = getDeclaredField(target.getClass(), key)
             }
 
-            Object value = e.getValue()
+            Object value = e.value
 
             if (value == null)
             {
-                jsonObj.put(key, null)
+                jsonObj[(key)] = null
             }
             else if (EMPTY_OBJECT.is(value))
             {
-                jsonObj.put(key, new JsonObject())
+                jsonObj[(key)] = new JsonObject()
             }
             else if (value.getClass().isArray())
             {    // LHS of assignment is an [] field or RHS is an array and LHS is Object (Map)
                 JsonObject<String, Object> jsonArray = new JsonObject<>()
-                jsonArray.put("@items", value)
+                jsonArray['@items'] = value
                 stack.addFirst(jsonArray)
-                jsonObj.put(key, jsonArray)
+                jsonObj[(key)] = jsonArray
             }
             else if (value instanceof JsonObject)
             {
                 JsonObject<String, Object> jObj = (JsonObject) value;
-                if (field != null && JsonObject.isPrimitiveWrapper(field.getType()))
+                if (field != null && JsonObject.isPrimitiveWrapper(field.type))
                 {
-                    jObj.put("value", newPrimitiveWrapper(field.getType(),jObj.get("value")))
+                    jObj['value'] = newPrimitiveWrapper(field.type, jObj['value'])
                     continue;
                 }
-                Long ref = (Long) jObj.get("@ref")
+                Long ref = (Long) jObj['@ref']
 
                 if (ref != null)
                 {    // Correct field references
                     JsonObject refObject = getReferencedObj(ref)
-                    jsonObj.put(key, refObject)    // Update Map-of-Maps reference
+                    jsonObj[(key)] = refObject    // Update Map-of-Maps reference
                 }
                 else
                 {
@@ -1720,21 +1718,21 @@ class GroovyJsonReader implements Closeable
             {   // The code below is 'upgrading' the RHS values in the passed in JsonObject Map
                 // by using the @type class name (when specified and exists), to coerce the vanilla
                 // JSON values into the proper types defined by the class listed in @type.  This is
-                // a cool feature of json-io, that even when reading a map-of-maps JSON file, it will
+                // a cool feature of groovy-io, that even when reading a map-of-maps JSON file, it will
                 // improve the final types of values in the maps RHS, to be of the field type that
                 // was optionally specified in @type.
-                final Class fieldType = field.getType()
+                final Class fieldType = field.type
                 if (isPrimitive(fieldType))
                 {
-                    jsonObj.put(key, newPrimitiveWrapper(fieldType, value))
+                    jsonObj[(key)] = newPrimitiveWrapper(fieldType, value)
                 }
                 else if (BigDecimal.class == fieldType)
                 {
-                    jsonObj.put(key, bigDecimalFrom(value))
+                    jsonObj[(key)] = bigDecimalFrom(value)
                 }
                 else if (BigInteger.class == fieldType)
                 {
-                    jsonObj.put(key, bigIntegerFrom(value))
+                    jsonObj[(key)] = bigIntegerFrom(value)
                 }
                 else if (value instanceof String)
                 {
@@ -1742,13 +1740,13 @@ class GroovyJsonReader implements Closeable
                     {
                         if ("".equals(((String)value).trim()))
                         {   // Allow "" to null out a non-String field on the inbound JSON
-                            jsonObj.put(key, null)
+                            jsonObj[(key)] = null
                         }
                     }
                 }
             }
         }
-        jsonObj.setTarget(null)  // don't waste space (used for typed return, not for Map return)
+        jsonObj.target = null  // don't waste space (used for typed return, not for Map return)
     }
 
     /**
@@ -1764,20 +1762,20 @@ class GroovyJsonReader implements Closeable
         Object special;
         if ((special = readIfMatching(jsonObj, null, stack)) != null)
         {
-            jsonObj.setTarget(special)
+            jsonObj.target = special
             return;
         }
 
-        final Object javaMate = jsonObj.getTarget()
+        final Object javaMate = jsonObj.target
         Iterator<Map.Entry<String, Object>> i = jsonObj.entrySet().iterator()
         Class cls = javaMate.getClass()
 
         while (i.hasNext())
         {
             Map.Entry<String, Object> e = i.next()
-            String key = e.getKey()
+            String key = e.key
             Field field = getDeclaredField(cls, key)
-            Object rhs = e.getValue()
+            Object rhs = e.value
             if (field != null)
             {
                 assignField(stack, jsonObj, field, rhs)
@@ -1799,27 +1797,27 @@ class GroovyJsonReader implements Closeable
     protected void assignField(final Deque<JsonObject<String, Object>> stack, final JsonObject jsonObj,
                                final Field field, final Object rhs) throws IOException
     {
-        final Object target = jsonObj.getTarget()
+        final Object target = jsonObj.target
         try
         {
-            final Class fieldType = field.getType()
+            final Class fieldType = field.type
 
             // If there is a "tree" of objects (e.g, Map<String, List<Person>>), the subobjects may not have an
             // @type on them, if the source of the JSON is from JSON.stringify().  Deep traverse the args and
             // mark @type on the items within the Maps and Collections, based on the parameterized type (if it
             // exists).
-            if (rhs instanceof JsonObject && field.getGenericType() instanceof ParameterizedType)
+            if (rhs instanceof JsonObject && field.genericType instanceof ParameterizedType)
             {   // Only JsonObject instances could contain unmarked objects.
-                markUntypedObjects(field.getGenericType(), rhs, GroovyJsonWriter.getDeepDeclaredFields(fieldType))
+                markUntypedObjects(field.genericType, rhs, GroovyJsonWriter.getDeepDeclaredFields(fieldType))
             }
 
             if (rhs instanceof JsonObject)
             {   // Ensure .setType() field set on JsonObject
                 JsonObject job = (JsonObject) rhs;
-                String type = job.getType()
+                String type = job.type
                 if (type == null || type.isEmpty())
                 {
-                    job.setType(fieldType.getName())
+                    job.type = fieldType.name
                 }
             }
 
@@ -1831,7 +1829,7 @@ class GroovyJsonReader implements Closeable
             else if (EMPTY_OBJECT.is(rhs))
             {
                 JsonObject jObj = new JsonObject()
-                jObj.setType(fieldType.getName())
+                jObj.type = fieldType.name
                 Object value = createGroovyInstance(fieldType, jObj)
                 field.set(target, value)
             }
@@ -1857,28 +1855,28 @@ class GroovyJsonReader implements Closeable
                 }
                 else
                 {
-                    jsonArray.put("@items", elements)
+                    jsonArray['@items'] = elements
                     createGroovyInstance(fieldType, jsonArray)
-                    field.set(target, jsonArray.getTarget())
+                    field.set(target, jsonArray.target)
                     stack.addFirst(jsonArray)
                 }
             }
             else if (rhs instanceof JsonObject)
             {
                 JsonObject<String, Object> jObj = (JsonObject) rhs;
-                Long ref = (Long) jObj.get("@ref")
+                Long ref = (Long) jObj['@ref']
 
                 if (ref != null)
                 {    // Correct field references
                     JsonObject refObject = getReferencedObj(ref)
 
-                    if (refObject.getTarget() != null)
+                    if (refObject.target != null)
                     {
-                        field.set(target, refObject.getTarget())
+                        field.set(target, refObject.target)
                     }
                     else
                     {
-                        unresolvedRefs.add(new UnresolvedReference(jsonObj, field.getName(), ref))
+                        unresolvedRefs.add(new UnresolvedReference(jsonObj, field.name, ref))
                     }
                 }
                 else
@@ -1908,7 +1906,7 @@ class GroovyJsonReader implements Closeable
         }
         catch (Exception e)
         {
-            error(e.getClass().getSimpleName() + " setting field '" + field.getName() + "' on target: " + safeToString(target) + " with value: " + rhs, e)
+            error(e.getClass().getSimpleName() + " setting field '" + field.name + "' on target: " + safeToString(target) + " with value: " + rhs, e)
         }
     }
 
@@ -1942,7 +1940,7 @@ class GroovyJsonReader implements Closeable
             {
                 Class clazz = getRawType(t)
                 ParameterizedType pType = (ParameterizedType)t;
-                Type[] typeArgs = pType.getActualTypeArguments()
+                Type[] typeArgs = pType.actualTypeArguments
 
                 if (typeArgs == null || typeArgs.length < 1 || clazz == null)
                 {
@@ -1959,10 +1957,10 @@ class GroovyJsonReader implements Closeable
                         convertMapToKeysItems((JsonObject) map)
                     }
 
-                    Object[] keys = (Object[])map.get("@keys")
+                    Object[] keys = (Object[])map['@keys']
                     getTemplateTraverseWorkItem(stack, keys, typeArgs[0])
 
-                    Object[] items = (Object[])map.get("@items")
+                    Object[] items = (Object[])map['@items']
                     getTemplateTraverseWorkItem(stack, items, typeArgs[1])
                 }
                 else if (Collection.class.isAssignableFrom(clazz))
@@ -1982,9 +1980,9 @@ class GroovyJsonReader implements Closeable
                             else if (vals instanceof Object[])
                             {
                                 JsonObject coll = new JsonObject()
-                                coll.setType(clazz.getName())
+                                coll.type = clazz.getName()
                                 List items = Arrays.asList((Object[]) vals)
-                                coll.put("@items", items.toArray())
+                                coll['@items'] = items.toArray()
                                 stack.addFirst([t, items] as Object[])
                                 array[i] = coll;
                             }
@@ -2023,15 +2021,15 @@ class GroovyJsonReader implements Closeable
 
                         for (Map.Entry<String, Object> entry : jObj.entrySet())
                         {
-                            final String fieldName = entry.getKey()
+                            final String fieldName = entry.key
                             if (!fieldName.startsWith('this$'))
                             {
                                 // TODO: If more than one type, need to associate correct typeArgs entry to value
                                 Field field = classMeta.get(fieldName)
 
-                                if (field != null && (field.getType().getTypeParameters().length > 0 || field.getGenericType() instanceof TypeVariable))
+                                if (field != null && (field.type.typeParameters.length > 0 || field.genericType instanceof TypeVariable))
                                 {
-                                    stack.addFirst([typeArgs[0], entry.getValue()] as Object[])
+                                    stack.addFirst([typeArgs[0], entry.value] as Object[])
                                 }
                             }
                         }
@@ -2074,9 +2072,9 @@ class GroovyJsonReader implements Closeable
         if (o instanceof JsonObject && clazz != null)
         {
             JsonObject jObj = (JsonObject) o;
-            if ((jObj.getType() == null || jObj.getType().isEmpty()) && jObj.getTarget() == null)
+            if ((jObj.type == null || jObj.type.empty) && jObj.target == null)
             {
-                jObj.setType(clazz.getName())
+                jObj.type = clazz.getName()
             }
         }
     }
@@ -2087,9 +2085,9 @@ class GroovyJsonReader implements Closeable
         {
             ParameterizedType pType = ((ParameterizedType) t)
 
-            if (pType.getRawType() instanceof Class)
+            if (pType.rawType instanceof Class)
             {
-                return (Class) pType.getRawType()
+                return (Class) pType.rawType
             }
         }
         return null;
@@ -2110,15 +2108,15 @@ class GroovyJsonReader implements Closeable
             for (Object e : map.entrySet())
             {
                 Map.Entry entry = (Map.Entry)e;
-                keys[i] = entry.getKey()
-                values[i] = entry.getValue()
+                keys[i] = entry.key
+                values[i] = entry.value
                 i++;
             }
-            String saveType = map.getType()
+            String saveType = map.type
             map.clear()
-            map.setType(saveType)
-            map.put("@keys", keys)
-            map.put("@items", values)
+            map.type = saveType
+            map['@keys'] = keys
+            map['@items'] = values
         }
     }
 
@@ -2141,7 +2139,7 @@ class GroovyJsonReader implements Closeable
     protected Object createGroovyInstance(Class clazz, JsonObject jsonObj) throws IOException
     {
         final boolean useMapsLocal = useMaps;
-        final String type = jsonObj.getType()
+        final String type = jsonObj.type
         Object mate;
 
         // @type always takes precedence over inferred Groovy (clazz) type.
@@ -2156,8 +2154,8 @@ class GroovyJsonReader implements Closeable
             {
                 if (useMapsLocal)
                 {
-                    jsonObj.setType(null)
-                    jsonObj.setTarget(null)
+                    jsonObj.type = null
+                    jsonObj.target = null
                     return jsonObj;
                 }
                 else
@@ -2172,22 +2170,22 @@ class GroovyJsonReader implements Closeable
                 if (c == ([] as char[]).class)
                 {
                     jsonObj.moveCharsToMate()
-                    mate = jsonObj.getTarget()
+                    mate = jsonObj.target
                 }
                 else
                 {
-                    mate = Array.newInstance(c.getComponentType(), size)
+                    mate = Array.newInstance(c.componentType, size)
                 }
             }
             else
             {    // Handle regular field.object reference
                 if (isPrimitive(c))
                 {
-                    mate = newPrimitiveWrapper(c, jsonObj.get("value"))
+                    mate = newPrimitiveWrapper(c, jsonObj['value'])
                 }
                 else if (c == Class.class)
                 {
-                    mate = classForName((String) jsonObj.get("value"))
+                    mate = classForName((String) jsonObj['value'])
                 }
                 else if (c.isEnum())
                 {
@@ -2195,7 +2193,7 @@ class GroovyJsonReader implements Closeable
                 }
                 else if (Enum.class.isAssignableFrom(c)) // anonymous subclass of an enum
                 {
-                    mate = getEnum(c.getSuperclass(), jsonObj)
+                    mate = getEnum(c.superclass, jsonObj)
                 }
                 else if ("java.util.Arrays$ArrayList".equals(c.getName()))
                 {	// Special case: Arrays$ArrayList does not allow .add() to be called on it.
@@ -2224,7 +2222,7 @@ class GroovyJsonReader implements Closeable
             if (clazz.isArray() || (items != null && clazz == Object.class && !jsonObj.containsKey("@keys")))
             {
                 int size = (items == null) ? 0 : items.length;
-                mate = Array.newInstance(clazz.isArray() ? clazz.getComponentType() : Object.class, size)
+                mate = Array.newInstance(clazz.isArray() ? clazz.componentType : Object.class, size)
             }
             else if (clazz.isEnum())
             {
@@ -2232,18 +2230,18 @@ class GroovyJsonReader implements Closeable
             }
             else if (Enum.class.isAssignableFrom(clazz)) // anonymous subclass of an enum
             {
-                mate = getEnum(clazz.getSuperclass(), jsonObj)
+                mate = getEnum(clazz.superclass, jsonObj)
             }
-            else if ("java.util.Arrays$ArrayList".equals(clazz.getName()))
+            else if ('java.util.Arrays$ArrayList'.equals(clazz.getName()))
             {	// Special case: Arrays$ArrayList does not allow .add() to be called on it.
-                mate = new ArrayList()
+                mate = []
             }
             else if (clazz == Object.class && !useMapsLocal)
             {
                 if (jsonObj.isMap() || jsonObj.size() > 0)
                 {
                     mate = new JsonObject()
-                    ((JsonObject)mate).setType(Map.class.getName())
+                    ((JsonObject)mate).type = Map.class.getName()
                 }
                 else
                 {   // Dunno
@@ -2255,7 +2253,7 @@ class GroovyJsonReader implements Closeable
                 mate = newInstance(clazz)
             }
         }
-        return jsonObj.setTarget(mate)
+        return jsonObj.target = mate
     }
 
     /**
@@ -2265,11 +2263,11 @@ class GroovyJsonReader implements Closeable
     {
         try
         {
-            return Enum.valueOf(c, (String) jsonObj.get("name"))
+            return Enum.valueOf(c, (String) jsonObj['name'])
         }
         catch (Exception e)
         {   // In case the enum class has it's own 'name' member variable (shadowing the 'name' variable on Enum)
-            return Enum.valueOf(c, (String) jsonObj.get("java.lang.Enum.name"))
+            return Enum.valueOf(c, (String) jsonObj['java.lang.Enum.name'])
         }
     }
 
@@ -2292,8 +2290,8 @@ class GroovyJsonReader implements Closeable
                     c = skipWhitespaceRead()
                     if (c == '{')
                     {
-                        object.setLine(inp.line)
-                        object.setColumn(inp.col)
+                        object.line = inp.line
+                        object.column = inp.col
                         c = skipWhitespaceRead()
                         if (c == '}')
                         {    // empty object
@@ -2331,16 +2329,16 @@ class GroovyJsonReader implements Closeable
                     if (field == null)
                     {	// field is null when you have an untyped Object[], so we place
                         // the JsonArray on the @items field.
-                        field = "@items";
+                        field = "@items"
                     }
 
                     Object value = readValue(object)
-                    object.put(field, value)
+                    object[(field)] = value
 
                     // If object is referenced (has @id), then put it in the _objsRead table.
                     if ("@id".equals(field))
                     {
-                        _objsRead.put((Long) value, object)
+                        _objsRead[(Long) value] = object
                     }
                     state = STATE_READ_POST_VALUE;
                     break
@@ -2369,10 +2367,10 @@ class GroovyJsonReader implements Closeable
 
         if (useMaps && object.isPrimitive())
         {
-            return object.getPrimitiveValue()
+            return object.primitiveValue
         }
 
-        return object;
+        return object
     }
 
     private Object readValue(JsonObject object) throws IOException
@@ -2389,17 +2387,17 @@ class GroovyJsonReader implements Closeable
                 return readArray(object)
             case ']':   // empty array
                 input.unread(c)
-                return EMPTY_ARRAY;
+                return EMPTY_ARRAY
             case 'f':
             case 'F':
                 input.unread(c)
                 readToken("false")
-                return Boolean.FALSE;
+                return Boolean.FALSE
             case 'n':
             case 'N':
                 input.unread(c)
                 readToken("null")
-                return null;
+                return null
             case 't':
             case 'T':
                 input.unread(c)
@@ -2553,7 +2551,7 @@ class GroovyJsonReader implements Closeable
     private String readString() throws IOException
     {
         final StringBuilder str = this.strBuf;
-        str.setLength(0)
+        str.length = 0
         StringBuilder hex = new StringBuilder()
         boolean done = false;
         final int STATE_STRING_START = 0;
@@ -2618,7 +2616,7 @@ class GroovyJsonReader implements Closeable
                             break
                         case 'u':
                             state = STATE_HEX_DIGITS;
-                            hex.setLength(0)
+                            hex.length = 0
                             break
                         default:
                             error("Invalid character escape sequence specified: " + c)
@@ -2671,7 +2669,7 @@ class GroovyJsonReader implements Closeable
         }
 
         String s = str.toString()
-        String cacheHit = stringCache.get(s)
+        String cacheHit = stringCache[(s)]
         return cacheHit == null ? s : cacheHit;
     }
 
@@ -2679,7 +2677,7 @@ class GroovyJsonReader implements Closeable
     {
         if (factory.containsKey(c))
         {
-            return factory.get(c).newInstance(c)
+            return factory[(c)].newInstance(c)
         }
         if (unmodifiableSortedMap.getClass().isAssignableFrom(c))
         {
@@ -2687,7 +2685,7 @@ class GroovyJsonReader implements Closeable
         }
         if (unmodifiableMap.getClass().isAssignableFrom(c))
         {
-            return new LinkedHashMap()
+            return [:]
         }
         if (unmodifiableSortedSet.getClass().isAssignableFrom(c))
         {
@@ -2699,11 +2697,11 @@ class GroovyJsonReader implements Closeable
         }
         if (unmodifiableCollection.getClass().isAssignableFrom(c))
         {
-            return new ArrayList()
+            return []
         }
 
         // Constructor not cached, go find a constructor
-        Object[] constructorInfo = constructors.get(c)
+        Object[] constructorInfo = constructors[(c)]
         if (constructorInfo != null)
         {   // Constructor was cached
             Constructor constructor = (Constructor) constructorInfo[0];
@@ -2722,7 +2720,7 @@ class GroovyJsonReader implements Closeable
             }
 
             Boolean useNull = (Boolean) constructorInfo[1];
-            Class[] paramTypes = constructor.getParameterTypes()
+            Class[] paramTypes = constructor.parameterTypes
             if (paramTypes == null || paramTypes.length == 0)
             {
                 try
@@ -2746,8 +2744,8 @@ class GroovyJsonReader implements Closeable
         }
 
         Object[] ret = newInstanceEx(c)
-        constructors.put(c, [ret[1], ret[2]] as Object[])
-        return ret[0];
+        constructors[(c)] = [ret[1], ret[2]] as Object[]
+        return ret[0]
     }
 
     /**
@@ -2775,7 +2773,7 @@ class GroovyJsonReader implements Closeable
 
     private static Object[] tryOtherConstruction(Class c) throws IOException
     {
-        Constructor[] constructors = c.getDeclaredConstructors()
+        Constructor[] constructors = c.declaredConstructors
         if (constructors.length == 0)
         {
             error("Cannot instantiate '" + c.getName() + "' - Primitive, interface, array[] or void")
@@ -2784,8 +2782,8 @@ class GroovyJsonReader implements Closeable
         // Try each constructor (private, protected, or public) with null values for non-primitives.
         for (Constructor constructor : constructors)
         {
-            constructor.setAccessible(true)
-            Class[] argTypes = constructor.getParameterTypes()
+            constructor.accessible = true
+            Class[] argTypes = constructor.parameterTypes
             Object[] values = fillArgs(argTypes, true)
             try
             {
@@ -2798,8 +2796,8 @@ class GroovyJsonReader implements Closeable
         // Try each constructor (private, protected, or public) with non-null values for primitives.
         for (Constructor constructor : constructors)
         {
-            constructor.setAccessible(true)
-            Class[] argTypes = constructor.getParameterTypes()
+            constructor.accessible = true
+            Class[] argTypes = constructor.parameterTypes
             Object[] values = fillArgs(argTypes, false)
             try
             {
@@ -2831,7 +2829,7 @@ class GroovyJsonReader implements Closeable
         final Object[] values = new Object[argTypes.length];
         for (int i = 0; i < argTypes.length; i++)
         {
-            final Class argType = argTypes[i];
+            final Class argType = argTypes[i]
             if (isPrimitive(argType))
             {
                 values[i] = newPrimitiveWrapper(argType, null)
@@ -2844,7 +2842,7 @@ class GroovyJsonReader implements Closeable
             {
                 if (argType == String.class)
                 {
-                    values[i] = "";
+                    values[i] = ""
                 }
                 else if (argType == Date.class)
                 {
@@ -2852,7 +2850,7 @@ class GroovyJsonReader implements Closeable
                 }
                 else if (List.class.isAssignableFrom(argType))
                 {
-                    values[i] = new ArrayList()
+                    values[i] = []
                 }
                 else if (SortedSet.class.isAssignableFrom(argType))
                 {
@@ -2868,19 +2866,19 @@ class GroovyJsonReader implements Closeable
                 }
                 else if (Map.class.isAssignableFrom(argType))
                 {
-                    values[i] = new LinkedHashMap()
+                    values[i] = [:]
                 }
                 else if (Collection.class.isAssignableFrom(argType))
                 {
-                    values[i] = new ArrayList()
+                    values[i] = []
                 }
                 else if (Calendar.class.isAssignableFrom(argType))
                 {
-                    values[i] = Calendar.getInstance()
+                    values[i] = Calendar.instance
                 }
                 else if (TimeZone.class.isAssignableFrom(argType))
                 {
-                    values[i] = TimeZone.getDefault()
+                    values[i] = TimeZone.default
                 }
                 else if (argType == BigInteger.class)
                 {
@@ -2959,7 +2957,7 @@ class GroovyJsonReader implements Closeable
                     rhs = removeLeadingAndTrailingQuotes((String) rhs)
                     if ("".equals(rhs))
                     {
-                        rhs = "false";
+                        rhs = "false"
                     }
                     return Boolean.parseBoolean((String)rhs)
                 }
@@ -2971,7 +2969,7 @@ class GroovyJsonReader implements Closeable
                     rhs = removeLeadingAndTrailingQuotes((String) rhs)
                     if ("".equals(rhs))
                     {
-                        rhs = "0";
+                        rhs = "0"
                     }
                     return Byte.parseByte((String)rhs)
                 }
@@ -2980,14 +2978,14 @@ class GroovyJsonReader implements Closeable
             case "java.lang.Character":
                 if (rhs == null)
                 {
-                    return (char)'\u0000';
+                    return (char)'\u0000'
                 }
                 if (rhs instanceof String)
                 {
                     rhs = removeLeadingAndTrailingQuotes((String) rhs)
                     if ("".equals(rhs))
                     {
-                        rhs = "\u0000";
+                        rhs = "\u0000"
                     }
                     return valueOf(((String) rhs).charAt(0))
                 }
@@ -3003,11 +3001,11 @@ class GroovyJsonReader implements Closeable
                     rhs = removeLeadingAndTrailingQuotes((String) rhs)
                     if ("".equals(rhs))
                     {
-                        rhs = "0.0";
+                        rhs = "0.0"
                     }
                     return Double.parseDouble((String)rhs)
                 }
-                return rhs != null ? rhs : 0.0d;
+                return rhs != null ? rhs : 0.0d
             case "float":
             case "java.lang.Float":
                 if (rhs instanceof String)
@@ -3015,11 +3013,11 @@ class GroovyJsonReader implements Closeable
                     rhs = removeLeadingAndTrailingQuotes((String) rhs)
                     if ("".equals(rhs))
                     {
-                        rhs = "0.0f";
+                        rhs = "0.0f"
                     }
                     return Float.parseFloat((String)rhs)
                 }
-                return rhs != null ? ((Number) rhs).floatValue() : 0.0f;
+                return rhs != null ? ((Number) rhs).floatValue() : 0.0f
             case "int":
             case "java.lang.Integer":
                 if (rhs instanceof String)
@@ -3027,11 +3025,11 @@ class GroovyJsonReader implements Closeable
                     rhs = removeLeadingAndTrailingQuotes((String) rhs)
                     if ("".equals(rhs))
                     {
-                        rhs = "0";
+                        rhs = "0"
                     }
                     return Integer.parseInt((String)rhs)
                 }
-                return rhs != null ? ((Number) rhs).intValue() : 0;
+                return rhs != null ? ((Number) rhs).intValue() : 0
             case "long":
             case "java.lang.Long":
                 if (rhs instanceof String)
@@ -3039,7 +3037,7 @@ class GroovyJsonReader implements Closeable
                     rhs = removeLeadingAndTrailingQuotes((String) rhs)
                     if ("".equals(rhs))
                     {
-                        rhs = "0";
+                        rhs = "0"
                     }
                     return Long.parseLong((String)rhs)
                 }
@@ -3051,11 +3049,11 @@ class GroovyJsonReader implements Closeable
                     rhs = removeLeadingAndTrailingQuotes((String) rhs)
                     if ("".equals(rhs))
                     {
-                        rhs = "0";
+                        rhs = "0"
                     }
                     return Short.parseShort((String)rhs)
                 }
-                return rhs != null ? ((Number) rhs).shortValue() : (short) 0;
+                return rhs != null ? ((Number) rhs).shortValue() : (short) 0
         }
 
         return error("Class '" + cname + "' requested for special instantiation - isPrimitive() does not match newPrimitiveWrapper()")
@@ -3068,7 +3066,7 @@ class GroovyJsonReader implements Closeable
         {
             s = m.group(2)
         }
-        return s;
+        return s
     }
 
     private static boolean isDigit(int c)
@@ -3084,7 +3082,7 @@ class GroovyJsonReader implements Closeable
         }
         try
         {
-            Class c = nameToClass.get(name)
+            Class c = nameToClass[(name)]
             return c == null ? loadClass(name) : c
         }
         catch (ClassNotFoundException e)
@@ -3096,9 +3094,9 @@ class GroovyJsonReader implements Closeable
     // loadClass() provided by: Thomas Margreiter
     private static Class loadClass(String name) throws ClassNotFoundException
     {
-        String className = name;
-        boolean arrayType = false;
-        Class primitiveArray = null;
+        String className = name
+        boolean arrayType = false
+        Class primitiveArray = null
 
         while (className.startsWith("["))
         {
@@ -3140,7 +3138,7 @@ class GroovyJsonReader implements Closeable
         Class currentClass = null;
         if (null == primitiveArray)
         {
-            currentClass = Thread.currentThread().getContextClassLoader().loadClass(className)
+            currentClass = Thread.currentThread().contextClassLoader.loadClass(className)
         }
 
         if (arrayType)
@@ -3228,8 +3226,8 @@ class GroovyJsonReader implements Closeable
         while (i.hasNext())
         {
             UnresolvedReference ref = (UnresolvedReference) i.next()
-            Object objToFix = ref.referencingObj.getTarget()
-            JsonObject objReferenced = _objsRead.get(ref.refId)
+            Object objToFix = ref.referencingObj.target
+            JsonObject objReferenced = _objsRead[(ref.refId)]
 
             if (objReferenced == null)
             {
@@ -3237,7 +3235,7 @@ class GroovyJsonReader implements Closeable
                 continue;
             }
 
-            if (objReferenced.getTarget() == null)
+            if (objReferenced.target == null)
             {
                 // System.err.println("Back referenced object does not exist,  @ref " + ref.refId + ", field '" + ref.field + '\'')
                 continue;
@@ -3254,16 +3252,16 @@ class GroovyJsonReader implements Closeable
                 if (objToFix instanceof List)
                 {   // Patch up Indexable Collections
                     List list = (List) objToFix;
-                    list.set(ref.index, objReferenced.getTarget())
+                    list.set(ref.index, objReferenced.target)
                 }
                 else if (objToFix instanceof Collection)
                 {   // Add element (since it was not indexable, add it to collection)
                     Collection col = (Collection) objToFix;
-                    col.add(objReferenced.getTarget())
+                    col.add(objReferenced.target)
                 }
                 else
                 {
-                    Array.set(objToFix, ref.index, objReferenced.getTarget())        // patch array element here
+                    Array.set(objToFix, ref.index, objReferenced.target)        // patch array element here
                 }
             }
             else
@@ -3273,11 +3271,11 @@ class GroovyJsonReader implements Closeable
                 {
                     try
                     {
-                        field.set(objToFix, objReferenced.getTarget())               // patch field here
+                        field.set(objToFix, objReferenced.target)               // patch field here
                     }
                     catch (Exception e)
                     {
-                        error("Error setting field while resolving references '" + field.getName() + "', @ref = " + ref.refId, e)
+                        error("Error setting field while resolving references '" + field.name + "', @ref = " + ref.refId, e)
                     }
                 }
             }
@@ -3292,7 +3290,7 @@ class GroovyJsonReader implements Closeable
             out.append(count)
             out.append(" unresolved references:\n")
             i = unresolvedRefs.iterator()
-            count = 1;
+            count = 1
 
             while (i.hasNext())
             {
@@ -3326,7 +3324,7 @@ class GroovyJsonReader implements Closeable
      */
     private void rehashMaps()
     {
-        final boolean useMapsLocal = useMaps;
+        final boolean useMapsLocal = useMaps
         for (Object[] mapPieces : prettyMaps)
         {
             JsonObject jObj = (JsonObject)  mapPieces[0];
@@ -3341,7 +3339,7 @@ class GroovyJsonReader implements Closeable
             }
             else
             {
-                map = (Map) jObj.getTarget()
+                map = (Map) jObj.target
                 javaKeys = (Object[]) mapPieces[1];
                 javaValues = (Object[]) mapPieces[2];
                 jObj.clear()
@@ -3351,8 +3349,8 @@ class GroovyJsonReader implements Closeable
 
             while (javaKeys != null && j < javaKeys.length)
             {
-                map.put(javaKeys[j], javaValues[j])
-                j++;
+                map[javaKeys[j]] = javaValues[j]
+                j++
             }
         }
     }
@@ -3394,13 +3392,13 @@ class GroovyJsonReader implements Closeable
      */
     private static Character valueOf(char c)
     {
-        return c <= 127 ? charCache[(int) c] : c;
+        return c <= 127 ? charCache[(int) c] : c
     }
 
-    public static final int MAX_CODE_POINT = 0x10ffff;
-    public static final int MIN_SUPPLEMENTARY_CODE_POINT = 0x010000;
-    public static final char MIN_LOW_SURROGATE = '\uDC00';
-    public static final char MIN_HIGH_SURROGATE = '\uD800';
+    public static final int MAX_CODE_POINT = 0x10ffff
+    public static final int MIN_SUPPLEMENTARY_CODE_POINT = 0x010000
+    public static final char MIN_LOW_SURROGATE = '\uDC00'
+    public static final char MIN_HIGH_SURROGATE = '\uD800'
 
     private static char[] toChars(final int codePoint)
     {
@@ -3418,7 +3416,7 @@ class GroovyJsonReader implements Closeable
         final int offset = codePoint - MIN_SUPPLEMENTARY_CODE_POINT
         result[1] = ((offset & 0x3ff) + MIN_LOW_SURROGATE) as char
         result[0] = ((offset >>> 10) + MIN_HIGH_SURROGATE) as char
-        return result;
+        return result
     }
 
     /**
@@ -3427,8 +3425,8 @@ class GroovyJsonReader implements Closeable
      */
     static final class Unsafe
     {
-    	private final Object sunUnsafe;
-    	private final Method allocateInstance;
+    	private final Object sunUnsafe
+    	private final Method allocateInstance
 
     	/**
     	 * Constructs unsafe object, acting as a wrapper.
@@ -3476,12 +3474,12 @@ class GroovyJsonReader implements Closeable
      */
     private static final class FastPushbackReader extends FilterReader
     {
-        private final int[] buf;
-        private final int[] snippet;
-        private int idx;
-        private int line;
-        private int col;
-        private int snippetLoc = 0;
+        private final int[] buf
+        private final int[] snippet
+        private int idx
+        private int line
+        private int col
+        private int snippetLoc = 0
 
         FastPushbackReader(Reader reader, int size)
         {
@@ -3490,11 +3488,11 @@ class GroovyJsonReader implements Closeable
             {
                 throw new IllegalArgumentException("size <= 0")
             }
-            buf = new int[size];
-            idx = size;
-            snippet = new int[SNIPPET_LENGTH];
-            line = 1;
-            col = 0;
+            buf = new int[size]
+            idx = size
+            snippet = new int[SNIPPET_LENGTH]
+            line = 1
+            col = 0
         }
 
         FastPushbackReader(Reader r)
@@ -3551,17 +3549,17 @@ class GroovyJsonReader implements Closeable
             {
                 if (ch == 0x0a)
                 {
-                    line++;
-                    col = 0;
+                    line++
+                    col = 0
                 }
                 else
                 {
-                    col++;
+                    col++
                 }
-                snippet[snippetLoc++] = ch;
+                snippet[snippetLoc++] = ch
                 if (snippetLoc >= SNIPPET_LENGTH)
                 {
-                    snippetLoc = 0;
+                    snippetLoc = 0
                 }
             }
             return ch;
@@ -3575,19 +3573,19 @@ class GroovyJsonReader implements Closeable
             }
             if (c == 0x0a)
             {
-                line--;
+                line--
             }
             else
             {
-                col--;
+                col--
             }
-            buf[--idx] = c;
-            snippetLoc--;
+            buf[--idx] = c
+            snippetLoc--
             if (snippetLoc < 0)
             {
-                snippetLoc = SNIPPET_LENGTH - 1;
+                snippetLoc = SNIPPET_LENGTH - 1
             }
-            snippet[snippetLoc] = c;
+            snippet[snippetLoc] = c
         }
     }
 }
