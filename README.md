@@ -6,7 +6,7 @@ Perfect Groovy serialization to and from JSON format (available on Maven Central
 <dependency>
   <groupId>com.cedarsoftware</groupId>
   <artifactId>groovy-io</artifactId>
-  <version>1.0.2</version>
+  <version>1.0.3</version>
 </dependency>
 ```
 <a class="coinbase-button" data-code="f5ab44535dc53e81b79e71f123ebdf42" data-button-style="custom_large" data-custom="json-io" href="https://coinbase.com/checkouts/f5ab44535dc53e81b79e71f123ebdf42">Feed hungry developers...</a><script src="https://coinbase.com/assets/button.js" type="text/javascript"></script>
@@ -118,6 +118,8 @@ Use `GroovyJsonWriter.formatJson()` API to format a passed in JSON string to a n
 See https://github.com/jdereg/json-command-servlet for a light-weight servlet that processes Ajax / XHR calls.
 
 Featured on http://json.org.
+ * 1.0.3
+  * More simplifications to source code using more of Groovy's capabilities.
  * 1.0.2
   * Initial release
 
