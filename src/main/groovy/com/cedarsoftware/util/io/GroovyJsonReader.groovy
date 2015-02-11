@@ -263,7 +263,7 @@ class GroovyJsonReader implements Closeable
      */
     public static void assignInstantiator(Class c, ClassFactory f)
     {
-        factory[(c)] = f
+        factory[c] = f
     }
 
     /**
@@ -322,7 +322,7 @@ class GroovyJsonReader implements Closeable
             {
                 error("java.util.TimeZone must specify 'zone' field")
             }
-            return jObj.setTarget(TimeZone.getTimeZone((String) zone))
+            return jObj.target = TimeZone.getTimeZone((String) zone)
         }
     }
 
@@ -724,7 +724,7 @@ class GroovyJsonReader implements Closeable
                 }
                 else
                 {
-                    return error("Unknown object type attempted to be assigned to BigInteger field: " + value)
+                    return bigIntegerFrom(valueObj['value'])
                 }
             }
 
@@ -827,7 +827,7 @@ class GroovyJsonReader implements Closeable
                 }
                 else
                 {
-                    return error("Unknown object type attempted to be assigned to BigInteger field: " + value)
+                    return bigDecimalFrom(valueObj['value'])
                 }
             }
 
