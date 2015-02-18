@@ -1,7 +1,7 @@
 groovy-io
 =======
 
-Perfect [Groovy](http://groovy.codehaus.org/) serialization to and from JSON format (available on Maven Central). To include in your project:
+Perfect [Groovy](http://groovy.codehaus.org/) serialization to and from JSON format (available on [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cgroovy-io)). To include in your project:
 ```
 <dependency>
   <groupId>com.cedarsoftware</groupId>
