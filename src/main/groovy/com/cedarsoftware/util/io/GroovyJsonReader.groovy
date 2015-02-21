@@ -2947,7 +2947,7 @@ class GroovyJsonReader implements Closeable
                 String.class.isAssignableFrom(c) ||
                 Number.class.isAssignableFrom(c) ||
                 Date.class.isAssignableFrom(c) ||
-                Class.class.isAssignableFrom(c)
+                Class.getClass().isAssignableFrom(c)
     }
 
     private static Object newPrimitiveWrapper(Class c, Object rhs) throws IOException
