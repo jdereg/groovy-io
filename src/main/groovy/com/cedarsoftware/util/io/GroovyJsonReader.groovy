@@ -1824,7 +1824,14 @@ class GroovyJsonReader implements Closeable
             Object special
             if (rhs == null)
             {
-                field.set(target, null)
+                if (fieldType.isPrimitive())
+                {
+                    field.set(target, newPrimitiveWrapper(fieldType, "0"))
+                }
+                else
+                {
+                    field.set(target, null)
+                }
             }
             else if (EMPTY_OBJECT.is(rhs))
             {
@@ -2241,7 +2248,6 @@ class GroovyJsonReader implements Closeable
                 if (jsonObj.isMap() || jsonObj.size() > 0)
                 {
                     mate = new JsonObject()
-                    ((JsonObject)mate).type = Map.class.getName()
                 }
                 else
                 {   // Dunno
@@ -2673,7 +2679,7 @@ class GroovyJsonReader implements Closeable
         return cacheHit == null ? s : cacheHit
     }
 
-    static Object newInstance(Class c) throws IOException
+    public static Object newInstance(Class c) throws IOException
     {
         if (factory.containsKey(c))
         {
