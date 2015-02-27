@@ -15,6 +15,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
+import static java.util.Map.Entry
+
 /**
  * Read an object graph in JSON format and make it available in Groovy objects, or
  * in a "Map of Maps." (untyped representation).  This code handles cyclic references
@@ -191,7 +193,8 @@ class GroovyJsonReader implements Closeable
     private static final Collection unmodifiableSortedSet = Collections.unmodifiableSortedSet(new TreeSet())
     private static final Map unmodifiableMap = Collections.unmodifiableMap(new HashMap())
     private static final Map unmodifiableSortedMap = Collections.unmodifiableSortedMap(new TreeMap())
-
+    private static final Map<Class, JsonTypeReader> readerCache = new ConcurrentHashMap<>()
+    private static final NullClass nullReader = new NullClass()
     private final Map<Long, JsonObject> _objsRead = [:]
     private final Collection<UnresolvedReference> unresolvedRefs = []
     private final Collection<Object[]> prettyMaps = []
@@ -949,7 +952,7 @@ class GroovyJsonReader implements Closeable
 
     public static void addReader(Class c, JsonTypeReader reader)
     {
-        for (Map.Entry entry : readers.entrySet())
+        for (Entry entry : readers.entrySet())
         {
             if (entry.key == c)
             {
@@ -1056,18 +1059,42 @@ class GroovyJsonReader implements Closeable
         return closestReader.read(o, stack)
     }
 
-	private static JsonTypeReader getCustomReader(Class c)
+    static class NullClass implements JsonTypeReader
     {
-		JsonTypeReader closestReader = null
+        Object read(Object jOb, Deque<JsonObject<String, Object>> stack) throws IOException
+        {
+            return null
+        }
+    }
+
+    private static JsonTypeReader getCustomReader(Class c)
+    {
+        JsonTypeReader reader = readerCache[c]
+        if (reader == null)
+        {
+            synchronized (readerCache)
+            {
+                reader = readerCache[c]
+                if (reader == null)
+                {
+                    reader = getForceCustomReader(c)
+                    readerCache[c] = reader
+                }
+            }
+        }
+        return reader.is(nullReader) ? null : reader
+    }
+    private static JsonTypeReader getForceCustomReader(Class c)
+    {
+		JsonTypeReader closestReader = nullReader
         int minDistance = Integer.MAX_VALUE
 
-        for (Map.Entry<Class, JsonTypeReader> entry : readers.entrySet())
+        for (Entry<Class, JsonTypeReader> entry : readers.entrySet())
         {
             Class clz = entry.key
             if (clz == c)
             {
-                closestReader = entry.value
-                break
+                return entry.value
             }
             int distance = GroovyJsonWriter.getDistance(clz, c)
             if (distance < minDistance)
@@ -1662,7 +1689,7 @@ class GroovyJsonReader implements Closeable
     protected void traverseFieldsNoObj(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj) throws IOException
     {
         final Object target = jsonObj.target
-        for (Map.Entry<String, Object> e : jsonObj.entrySet())
+        for (Entry<String, Object> e : jsonObj.entrySet())
         {
             String key = e.key
 
@@ -1767,12 +1794,12 @@ class GroovyJsonReader implements Closeable
         }
 
         final Object javaMate = jsonObj.target
-        Iterator<Map.Entry<String, Object>> i = jsonObj.entrySet().iterator()
+        Iterator<Entry<String, Object>> i = jsonObj.entrySet().iterator()
         Class cls = javaMate.getClass()
 
         while (i.hasNext())
         {
-            Map.Entry<String, Object> e = i.next()
+            Entry<String, Object> e = i.next()
             String key = e.key
             Field field = getDeclaredField(cls, key)
             Object rhs = e.value
@@ -2026,7 +2053,7 @@ class GroovyJsonReader implements Closeable
                     {
                         JsonObject<String, Object> jObj = (JsonObject) instance
 
-                        for (Map.Entry<String, Object> entry : jObj.entrySet())
+                        for (Entry<String, Object> entry : jObj.entrySet())
                         {
                             final String fieldName = entry.key
                             if (!fieldName.startsWith('this$'))
@@ -2114,7 +2141,7 @@ class GroovyJsonReader implements Closeable
             int i=0
             for (Object e : map.entrySet())
             {
-                Map.Entry entry = (Map.Entry)e
+                Entry entry = (Entry)e
                 keys[i] = entry.key
                 values[i] = entry.value
                 i++
@@ -3410,7 +3437,7 @@ class GroovyJsonReader implements Closeable
     {
         if (codePoint < 0 || codePoint > MAX_CODE_POINT)
         {    // int UTF-8 char must be in range
-            throw new IllegalArgumentException("value ' + codePoint + ' outside UTF-8 range")
+            throw new IllegalArgumentException('value ' + codePoint + ' outside UTF-8 range')
         }
 
         if (codePoint < MIN_SUPPLEMENTARY_CODE_POINT)
@@ -3418,11 +3445,9 @@ class GroovyJsonReader implements Closeable
             return [(char) codePoint] as char[]
         }
 
-        final char[] result = new char[2]
         final int offset = codePoint - MIN_SUPPLEMENTARY_CODE_POINT
-        result[1] = ((offset & 0x3ff) + MIN_LOW_SURROGATE) as char
-        result[0] = ((offset >>> 10) + MIN_HIGH_SURROGATE) as char
-        return result
+        return [((offset & 0x3ff) + MIN_LOW_SURROGATE) as char,
+                ((offset >>> 10) + MIN_HIGH_SURROGATE) as char] as char[]
     }
 
     /**

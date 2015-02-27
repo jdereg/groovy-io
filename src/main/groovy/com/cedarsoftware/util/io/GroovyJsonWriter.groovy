@@ -81,6 +81,8 @@ class GroovyJsonWriter implements Closeable, Flushable
     private static final Object[] byteStrings = new Object[256]
     private static final String newLine = System.getProperty("line.separator")
     private static final Long ZERO = 0L
+    private static final Map<Class, JsonTypeWriter> writerCache = new ConcurrentHashMap<>()
+    private static final NullClass nullWriter = new NullClass()
     private final Map<Object, Long> objVisited = new IdentityHashMap<>()
     private final Map<Object, Long> objsReferenced = new IdentityHashMap<>()
     private final Writer out
@@ -326,9 +328,9 @@ class GroovyJsonWriter implements Closeable, Flushable
 
     static int getDistanceToInterface(Class<?> to, Class<?> from)
     {
-        Set<Class<?>> possibleCandidates = new LinkedHashSet<>()
+        final Set<Class<?>> possibleCandidates = new LinkedHashSet<>()
+        final Class<?>[] interfaces = from.interfaces
 
-        Class<?>[] interfaces = from.interfaces
         // is the interface direct inherited or via interfaces extends interface?
         for (Class<?> interfase : interfaces)
         {
@@ -385,7 +387,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
     private boolean writeCustom(Class arrayComponentClass, Object o, boolean showType, Writer output) throws IOException
     {
-		JsonTypeWriter closestWriter = getCustomJSonWriter(arrayComponentClass)
+		JsonTypeWriter closestWriter = getCustomWriter(arrayComponentClass)
 
         if (closestWriter == null)
         {
@@ -434,29 +436,51 @@ class GroovyJsonWriter implements Closeable, Flushable
         return true
     }
 
-	private static JsonTypeWriter getCustomJSonWriter(Class classToWrite)
+    static class NullClass implements JsonTypeWriter
     {
-		JsonTypeWriter closestWriter = null
-		int minDistance = Integer.MAX_VALUE
+        void write(Object o, boolean showType, Writer output) throws IOException { }
+        boolean hasPrimitiveForm()  { return false }
+        void writePrimitiveForm(Object o, Writer output) throws IOException { }
+    }
+
+    private static JsonTypeWriter getCustomWriter(Class c)
+    {
+        JsonTypeWriter writer = writerCache[c]
+        if (writer == null)
+        {
+            synchronized (writerCache)
+            {
+                writer = writerCache[c]
+                if (writer == null)
+                {
+                    writer = getForceCustomWriter(c)
+                    writerCache[c] = writer
+                }
+            }
+        }
+        return writer.is(nullWriter) ? null : writer
+    }
+    private static JsonTypeWriter getForceCustomWriter(Class c)
+    {
+        JsonTypeWriter closestWriter = nullWriter
+        int minDistance = Integer.MAX_VALUE
 
         for (Entry<Class, JsonTypeWriter> entry : writers.entrySet())
         {
-			Class clz = entry.key
-			if (clz.is(classToWrite))
+            Class clz = entry.key
+            if (clz == c)
             {
-				closestWriter = entry.value
-				break
-			}
-			int distance = getDistance(clz, classToWrite)
-			if (distance < minDistance)
+                return entry.value
+            }
+            int distance = getDistance(clz, c)
+            if (distance < minDistance)
             {
-				minDistance = distance;
-				closestWriter = entry.value
-			}
-		}
-
-		return closestWriter
-	}
+                minDistance = distance
+                closestWriter = entry.value
+            }
+        }
+        return closestWriter
+    }
 
     public static void addWriter(Class c, JsonTypeWriter writer)
     {
@@ -474,7 +498,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
     public static void addNotCustomWriter(Class c)
     {
-        notCustom.add(c)
+        writerCache[c] = nullWriter
     }
 
     public static class TimeZoneWriter implements JsonTypeWriter {
@@ -795,7 +819,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             else
             {
 				// Only trace fields if no custom writer is present
-				if (getCustomJSonWriter(obj.getClass()) == null)
+				if (getCustomWriter(obj.getClass()) == null)
                 {
 					traceFields(stack, obj)
 				}
