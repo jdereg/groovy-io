@@ -2585,7 +2585,7 @@ class GroovyJsonReader implements Closeable
     {
         final StringBuilder str = this.strBuf
         str.length = 0
-        StringBuilder hex = new StringBuilder()
+        final StringBuilder hex = new StringBuilder()
         boolean done = false
         final int STATE_STRING_START = 0
         final int STATE_STRING_SLASH = 1
@@ -2701,8 +2701,8 @@ class GroovyJsonReader implements Closeable
             }
         }
 
-        String s = str.toString()
-        String cacheHit = stringCache[(s)]
+        final String s = str.toString()
+        final String cacheHit = stringCache[s]
         return cacheHit == null ? s : cacheHit
     }
 
