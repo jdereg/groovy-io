@@ -9,7 +9,7 @@ Perfect [Groovy](http://groovy.codehaus.org/) serialization to and from JSON for
   <version>1.0.4</version>
 </dependency>
 ```
-<a class="coinbase-button" data-code="f5ab44535dc53e81b79e71f123ebdf42" data-button-style="custom_large" data-custom="json-io" href="https://coinbase.com/checkouts/f5ab44535dc53e81b79e71f123ebdf42">Feed hungry developers...</a><script src="https://coinbase.com/assets/button.js" type="text/javascript"></script>
+[Donations welcome](https://coinbase.com/jdereg)
 
 **groovy-io** consists of two main classes, a reader (`GroovyJsonReader`) and a writer (`GroovyJsonWriter`).  **groovy-io** eliminates the need for using `ObjectInputStream / ObjectOutputStream` to serialize objects and instead uses the JSON format.  There is a 3rd optional class (`JsonObject`) see 'Non-typed Usage' below.
 
