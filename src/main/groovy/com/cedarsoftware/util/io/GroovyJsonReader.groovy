@@ -202,6 +202,7 @@ class GroovyJsonReader implements Closeable
     private boolean useMaps = false
     private final char[] numBuf = new char[256]
     private final StringBuilder strBuf = new StringBuilder()
+    private final StringBuilder hexBuf = new StringBuilder()
 
     static final ThreadLocal<FastPushbackReader> threadInput = new ThreadLocal<>()
 
@@ -2574,6 +2575,11 @@ class GroovyJsonReader implements Closeable
         return (Number) (isNeg ? -n : n)
     }
 
+    private static final int STATE_STRING_START = 0
+    private static final int STATE_STRING_SLASH = 1
+    private static final int STATE_HEX_DIGITS_START = 2
+    private static final int STATE_HEX_DIGITS = 3
+
     /**
      * Read a JSON string
      * This method assumes the initial quote has already been read.
@@ -2585,11 +2591,7 @@ class GroovyJsonReader implements Closeable
     {
         final StringBuilder str = this.strBuf
         str.length = 0
-        final StringBuilder hex = new StringBuilder()
         boolean done = false
-        final int STATE_STRING_START = 0
-        final int STATE_STRING_SLASH = 1
-        final int STATE_HEX_DIGITS = 2
         int state = STATE_STRING_START
 
         while (!done)
@@ -2603,17 +2605,17 @@ class GroovyJsonReader implements Closeable
             switch (state)
             {
                 case STATE_STRING_START:
-                    if (c == '\\')
-                    {
-                        state = STATE_STRING_SLASH
-                    }
-                    else if (c == '"')
+                    if (c == '"')
                     {
                         done = true
                     }
+                    else if (c == '\\')
+                    {
+                        state = STATE_STRING_SLASH
+                    }
                     else
                     {
-                        str.append(toChars(c))
+                        str.appendCodePoint(c)
                     }
                     break
 
@@ -2648,8 +2650,7 @@ class GroovyJsonReader implements Closeable
                             str.append('\t')
                             break
                         case 'u':
-                            state = STATE_HEX_DIGITS
-                            hex.length = 0
+                            state = STATE_HEX_DIGITS_START
                             break
                         default:
                             error("Invalid character escape sequence specified: " + c)
@@ -2661,6 +2662,9 @@ class GroovyJsonReader implements Closeable
                     }
                     break
 
+                case STATE_HEX_DIGITS_START:
+                    hexBuf.length = 0;
+                    state = STATE_HEX_DIGITS;   // intentional 'fall-thru'
                 case STATE_HEX_DIGITS:
                     switch((char)c)
                     {
@@ -2686,10 +2690,10 @@ class GroovyJsonReader implements Closeable
                         case 'd':
                         case 'e':
                         case 'f':
-                            hex.append((char) c)
-                            if (hex.length() == 4)
+                            hexBuf.append((char) c)
+                            if (hexBuf.length() == 4)
                             {
-                                int value = Integer.parseInt(hex.toString(), 16)
+                                int value = Integer.parseInt(hexBuf.toString(), 16)
                                 str.append(valueOf((char) value))
                                 state = STATE_STRING_START
                             }
@@ -3428,28 +3432,6 @@ class GroovyJsonReader implements Closeable
         return c <= 127 ? charCache[(int) c] : c
     }
 
-    public static final int MAX_CODE_POINT = 0x10ffff
-    public static final int MIN_SUPPLEMENTARY_CODE_POINT = 0x010000
-    public static final char MIN_LOW_SURROGATE = '\uDC00'
-    public static final char MIN_HIGH_SURROGATE = '\uD800'
-
-    private static char[] toChars(final int codePoint)
-    {
-        if (codePoint < 0 || codePoint > MAX_CODE_POINT)
-        {    // int UTF-8 char must be in range
-            throw new IllegalArgumentException('value ' + codePoint + ' outside UTF-8 range')
-        }
-
-        if (codePoint < MIN_SUPPLEMENTARY_CODE_POINT)
-        {    // if the int character fits in two bytes...
-            return [(char) codePoint] as char[]
-        }
-
-        final int offset = codePoint - MIN_SUPPLEMENTARY_CODE_POINT
-        return [((offset & 0x3ff) + MIN_LOW_SURROGATE) as char,
-                ((offset >>> 10) + MIN_HIGH_SURROGATE) as char] as char[]
-    }
-
     /**
      * Wrapper for unsafe, decouples direct usage of sun.misc.* package.
      * @author Kai Hufenback
@@ -3536,37 +3518,28 @@ class GroovyJsonReader implements Closeable
             StringBuilder s = new StringBuilder()
             for (int i=snippetLoc; i < SNIPPET_LENGTH; i++)
             {
-                if (addCharToSnippet(s, i))
+                if (appendChar(s, i))
                 {
                     break
                 }
             }
             for (int i=0; i < snippetLoc; i++)
             {
-                if (addCharToSnippet(s, i))
+                if (appendChar(s, i))
                 {
                     break
                 }
             }
-            return s.toString()
+            return s.toString();
         }
 
-        private boolean addCharToSnippet(StringBuilder s, int i)
+        private boolean appendChar(StringBuilder s, int i)
         {
-            final char[] character
             try
             {
-                character = toChars(snippet[i])
+                s.appendCodePoint(snippet[i])
             }
             catch (Exception e)
-            {
-                return true
-            }
-            if (snippet[i] != 0)
-            {
-                s.append(character)
-            }
-            else
             {
                 return true
             }
