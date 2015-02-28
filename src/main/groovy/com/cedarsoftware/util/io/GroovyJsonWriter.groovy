@@ -62,7 +62,6 @@ class GroovyJsonWriter implements Closeable, Flushable
     public static final String PRETTY_PRINT = "PRETTY_PRINT"       // Force nicely formatted JSON output
     public static final String FIELD_SPECIFIERS = "FIELD_SPECIFIERS"   // Set value to a Map<Class, List<String>> which will be used to control which fields on a class are output
     public static final String ENUM_PUBLIC_ONLY = "ENUM_PUBLIC_ONLY" // If set, indicates that private variables of ENUMs are not to be serialized
-    private static final Map<String, ClassMeta> classMetaCache = new ConcurrentHashMap<>()
     private static final Map<Class, JsonTypeWriter> writers = [
             (String.class):new JsonStringWriter(),
             (Date.class):new DateWriter(),
@@ -109,10 +108,6 @@ class GroovyJsonWriter implements Closeable, Flushable
             char[] chars = Integer.toString(i).toCharArray()
             byteStrings[i + 128] = chars
         }
-    }
-
-    static class ClassMeta extends LinkedHashMap<String, Field>
-    {
     }
 
     /**
@@ -221,11 +216,11 @@ class GroovyJsonWriter implements Closeable, Flushable
                 List<String> fields = entry.value
                 List<Field> newList = new ArrayList(fields.size())
 
-                ClassMeta meta = getDeepDeclaredFields(clazz)
+                Map<String, Field> classFields = MetaUtils.getDeepDeclaredFields(clazz)
 
                 for (String field : fields)
                 {
-                    Field f = meta[field]
+                    Field f = classFields[field]
                     if (f == null)
                     {
                         throw new IllegalArgumentException("Unable to locate field: " + field + " on class: " + clazz.getName() + ". Make sure the fields in the FIELD_SPECIFIERS map existing on the associated class.")
@@ -302,66 +297,6 @@ class GroovyJsonWriter implements Closeable, Flushable
         {
             output.write("  ")
         }
-    }
-
-    public static int getDistance(Class a, Class b)
-    {
-		if (a.isInterface())
-        {
-			return getDistanceToInterface(a, b)
-		}
-        Class curr = b
-        int distance = 0
-
-        while (curr != a)
-        {
-            distance++
-            curr = curr.superclass
-            if (curr == null)
-            {
-                return Integer.MAX_VALUE
-            }
-        }
-
-        return distance
-    }
-
-    static int getDistanceToInterface(Class<?> to, Class<?> from)
-    {
-        final Set<Class<?>> possibleCandidates = new LinkedHashSet<>()
-        final Class<?>[] interfaces = from.interfaces
-
-        // is the interface direct inherited or via interfaces extends interface?
-        for (Class<?> interfase : interfaces)
-        {
-            if (to.equals(interfase))
-            {
-                return 1
-            }
-            // because of multi-inheritance from interfaces
-            if (to.isAssignableFrom(interfase))
-            {
-                possibleCandidates.add(interfase)
-            }
-        }
-
-        // it is also possible, that the interface is included in superclasses
-        if (from.superclass != null  && to.isAssignableFrom(from.superclass))
-        {
-            possibleCandidates.add(from.superclass)
-        }
-
-        int minimum = Integer.MAX_VALUE
-        for (Class<?> candidate : possibleCandidates)
-        {
-            // Could do that in a non recursive way later
-            int distance = getDistanceToInterface(to, candidate)
-            if (distance < minimum)
-            {
-                minimum = ++distance
-            }
-        }
-        return minimum
     }
 
     public boolean writeIfMatching(Object o, boolean showType, Writer output) throws IOException
@@ -472,7 +407,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             {
                 return entry.value
             }
-            int distance = getDistance(clz, c)
+            int distance = MetaUtils.getDistance(clz, c)
             if (distance < minDistance)
             {
                 minDistance = distance
@@ -841,7 +776,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         Collection fields = getFieldsUsingSpecifier(obj.getClass(), fieldSpecifiers)
         if (fields == null)
         {   // Trace fields using reflection
-            fields = getDeepDeclaredFields(obj.getClass()).values()
+            fields = MetaUtils.getDeepDeclaredFields(obj.getClass()).values()
         }
 
         for (Field field : fields)
@@ -874,7 +809,7 @@ class GroovyJsonWriter implements Closeable, Flushable
                 return entry.value
             }
 
-            int distance = getDistance(c, classBeingWritten)
+            int distance = MetaUtils.getDistance(c, classBeingWritten)
 
             if (distance < minDistance)
             {
@@ -1794,8 +1729,8 @@ class GroovyJsonWriter implements Closeable, Flushable
     {
         if (type != null)
         {
-            ClassMeta meta = getDeepDeclaredFields(type)
-            Field field = meta[fieldName]
+            Map<String, Field> classFields = MetaUtils.getDeepDeclaredFields(type)
+            Field field = classFields[fieldName]
             return field != null && (value.getClass() == field.type)
         }
         return false
@@ -2032,7 +1967,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
         else
         {   // Reflectively use fields, skipping transient and static fields
-            final Map<String, Field> classInfo = getDeepDeclaredFields(obj.getClass())
+            final Map<String, Field> classInfo = MetaUtils.getDeepDeclaredFields(obj.getClass())
             for (Entry<String, Field> entry : classInfo.entrySet())
             {
                 final String fieldName = entry.key
@@ -2157,69 +2092,6 @@ class GroovyJsonWriter implements Closeable, Flushable
             }
         }
         output.write('\"')
-    }
-
-    /**
-     * @param c Class instance
-     * @return ClassMeta which contains fields of class.  The results are cached internally for performance
-     *         when called again with same Class.
-     */
-    static ClassMeta getDeepDeclaredFields(Class c)
-    {
-        ClassMeta classInfo = classMetaCache[c.getName()]
-        if (classInfo != null)
-        {
-            return classInfo
-        }
-
-        classInfo = new ClassMeta()
-        Class curr = c
-
-        while (curr != null)
-        {
-            try
-            {
-                Field[] local = curr.declaredFields
-
-                for (Field field : local)
-                {
-                    if ((field.modifiers & Modifier.STATIC) == 0)
-                    {   // speed up: do not process static fields.
-                        if ('metaClass'.equals(field.getName()) && 'groovy.lang.MetaClass'.equals(field.type.name))
-                        {   // Skip Groovy metaClass field if present
-                            continue
-                        }
-
-                        if (!field.isAccessible())
-                        {
-                            try
-                            {
-                                field.accessible = true
-                            }
-                            catch (Exception ignored) { }
-                        }
-                        if (classInfo.containsKey(field.name))
-                        {
-                            classInfo[curr.name + '.' + field.name] = field
-                        }
-                        else
-                        {
-                            classInfo[field.name] = field
-                        }
-                    }
-                }
-            }
-            catch (ThreadDeath t)
-            {
-                throw t
-            }
-            catch (Throwable ignored) { }
-
-            curr = curr.superclass
-        }
-
-        classMetaCache[c.getName()] = classInfo
-        return classInfo
     }
 
     public void flush()

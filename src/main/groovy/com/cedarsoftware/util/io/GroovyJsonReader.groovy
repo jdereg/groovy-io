@@ -1097,7 +1097,7 @@ class GroovyJsonReader implements Closeable
             {
                 return entry.value
             }
-            int distance = GroovyJsonWriter.getDistance(clz, c)
+            int distance = MetaUtils.getDistance(clz, c)
             if (distance < minDistance)
             {
                 minDistance = distance
@@ -1702,7 +1702,7 @@ class GroovyJsonReader implements Closeable
             Field field = null
             if (target != null)
             {
-                field = getDeclaredField(target.getClass(), key)
+                field = MetaUtils.getField(target.getClass(), key)
             }
 
             Object value = e.value
@@ -1802,7 +1802,7 @@ class GroovyJsonReader implements Closeable
         {
             Entry<String, Object> e = i.next()
             String key = e.key
-            Field field = getDeclaredField(cls, key)
+            Field field = MetaUtils.getField(cls, key)
             Object rhs = e.value
             if (field != null)
             {
@@ -1836,7 +1836,7 @@ class GroovyJsonReader implements Closeable
             // exists).
             if (rhs instanceof JsonObject && field.genericType instanceof ParameterizedType)
             {   // Only JsonObject instances could contain unmarked objects.
-                markUntypedObjects(field.genericType, rhs, GroovyJsonWriter.getDeepDeclaredFields(fieldType))
+                markUntypedObjects(field.genericType, rhs, MetaUtils.getDeepDeclaredFields(fieldType))
             }
 
             if (rhs instanceof JsonObject)
@@ -1961,7 +1961,7 @@ class GroovyJsonReader implements Closeable
         }
     }
 
-    private static void markUntypedObjects(Type type, Object rhs, GroovyJsonWriter.ClassMeta classMeta)
+    private static void markUntypedObjects(Type type, Object rhs, Map<String, Field> classFields)
     {
         Deque<Object[]> stack = new ArrayDeque<>()
         stack.addFirst([type, rhs] as Object[])
@@ -2060,7 +2060,7 @@ class GroovyJsonReader implements Closeable
                             if (!fieldName.startsWith('this$'))
                             {
                                 // TODO: If more than one type, need to associate correct typeArgs entry to value
-                                Field field = classMeta.get(fieldName)
+                                Field field = classFields.get(fieldName)
 
                                 if (field != null && (field.type.typeParameters.length > 0 || field.genericType instanceof TypeVariable))
                                 {
@@ -3191,22 +3191,6 @@ class GroovyJsonReader implements Closeable
     }
 
     /**
-     * Get a Field object using a String field name and a Class instance.  This
-     * method will start on the Class passed in, and if not found there, will
-     * walk up super classes until it finds the field, or throws an IOException
-     * if it cannot find the field.
-     *
-     * @param c Class containing the desired field.
-     * @param fieldName String name of the desired field.
-     * @return Field object obtained from the passed in class (by name).  The Field
-     *         returned is cached so that it is only obtained via reflection once.
-     */
-    protected Field getDeclaredField(Class c, String fieldName)
-    {
-        return GroovyJsonWriter.getDeepDeclaredFields(c).get(fieldName)
-    }
-
-    /**
      * Read until non-whitespace character and then return it.
      * This saves extra read/pushback.
      *
@@ -3303,7 +3287,7 @@ class GroovyJsonReader implements Closeable
             }
             else
             {    // Fix field forward reference
-                Field field = getDeclaredField(objToFix.getClass(), ref.field)
+                Field field = MetaUtils.getField(objToFix.getClass(), ref.field)
                 if (field != null)
                 {
                     try
