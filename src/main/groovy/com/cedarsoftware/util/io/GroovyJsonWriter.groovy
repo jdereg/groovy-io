@@ -686,7 +686,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         {
             Object obj = stack.removeFirst()
 
-            if (!GroovyJsonReader.isLogicalPrimitive(obj.getClass()))
+            if (!MetaUtils.isLogicalPrimitive(obj.getClass()))
             {
                 Long id = visited[obj]
                 if (id != null)
@@ -711,7 +711,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             if (clazz.isArray())
             {
                 Class compType = clazz.componentType
-                if (!GroovyJsonReader.isLogicalPrimitive(compType))
+                if (!MetaUtils.isLogicalPrimitive(compType))
                 {   // Speed up: do not traceReferences of primitives, they cannot reference anything
                     final int len = Array.getLength(obj)
 
@@ -784,7 +784,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             try
             {
                 final Object o = field.get(obj)
-                if (o != null && !GroovyJsonReader.isLogicalPrimitive(o.getClass()))
+                if (o != null && !MetaUtils.isLogicalPrimitive(o.getClass()))
                 {
                     stack.addFirst(o)
                 }
@@ -823,7 +823,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
     private boolean writeOptionalReference(Object obj) throws IOException
     {
-        if (obj != null && GroovyJsonReader.isLogicalPrimitive(obj.getClass()))
+        if (obj != null && MetaUtils.isLogicalPrimitive(obj.getClass()))
         {
             return false
         }
@@ -1062,7 +1062,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         else
         {
             final Class componentClass = array.getClass().componentType
-            final boolean isPrimitiveArray = GroovyJsonReader.isPrimitive(componentClass)
+            final boolean isPrimitiveArray = MetaUtils.isPrimitive(componentClass)
             final boolean isObjectArray = ([] as Object[]).class.is(arrayType)
 
             for (int i = 0; i < len; i++)
@@ -2021,7 +2021,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         Class type = field.type
         boolean forceType = o.getClass() != type;     // If types are not exactly the same, write "@type" field
 
-        if (GroovyJsonReader.isPrimitive(type))
+        if (MetaUtils.isPrimitive(type))
         {
             writePrimitive(o)
         }

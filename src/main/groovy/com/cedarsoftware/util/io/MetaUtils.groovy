@@ -5,8 +5,7 @@ import java.lang.reflect.Modifier
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * This utility class is used to retrieve the fields from a Class.  It uses reflection
- * to do so, allowing it to obtain the non-public fields.
+ * This utility class is used to perform operations on Classes, Fields, etc.
  *
  * @author John DeRegnaucourt (jdereg@gmail.com)
  *         <br/>
@@ -27,6 +26,16 @@ import java.util.concurrent.ConcurrentHashMap
 class MetaUtils
 {
     private static final Map<Class, Map<String, Field>> classMetaCache = new ConcurrentHashMap<>()
+    private static final Set<Class> prims = [
+            Byte.class,
+            Short.class,
+            Integer.class,
+            Long.class,
+            Float.class,
+            Double.class,
+            Boolean.class,
+            Character.class
+    ] as Set
 
     static Field getField(Class c, String field)
     {
@@ -64,7 +73,7 @@ class MetaUtils
                             continue
                         }
 
-                        if (!field.isAccessible())
+                        if (!field.accessible)
                         {
                             try
                             {
@@ -158,4 +167,33 @@ class MetaUtils
         }
         return minimum;
     }
+
+    /**
+     * @param c Class to test
+     * @return boolean true if the passed in class is a Java primitive, false otherwise.  The Wrapper classes
+     * Integer, Long, Boolean, etc. are consider primitives by this method.
+     */
+    public static boolean isPrimitive(Class c)
+    {
+        return c.isPrimitive() || prims.contains(c)
+    }
+
+    /**
+     * @param c Class to test
+     * @return boolean true if the passed in class is a 'logical' primitive.  A logical primitive is defined
+     * as all Java primitives, the primitive wrapper classes, String, Number, and Class.  The reason these are
+     * considered 'logical' primitives is that they are immutable and therefore can be written without references
+     * in JSON content (making the JSON more readable - less @id / @ref), without breaking the semantics (shape)
+     * of the object graph being written.
+     */
+    public static boolean isLogicalPrimitive(Class c)
+    {
+        return c.isPrimitive() ||
+                prims.contains(c) ||
+                String.class == c ||
+                Number.class.isAssignableFrom(c) ||
+                Date.class.isAssignableFrom(c) ||
+                c == Class
+    }
+
 }

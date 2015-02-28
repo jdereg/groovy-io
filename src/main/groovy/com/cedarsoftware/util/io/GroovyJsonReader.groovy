@@ -109,16 +109,6 @@ class GroovyJsonReader implements Closeable
             '8':'8',
             '9':'9'
     ]
-    private static final Set<Class> prims = [
-            Byte.class,
-            Short.class,
-            Integer.class,
-            Long.class,
-            Float.class,
-            Double.class,
-            Boolean.class,
-            Character.class
-    ] as Set
     private static final Map<String, Class> nameToClass = [
             'string':String.class,
             'boolean':boolean.class,
@@ -663,7 +653,7 @@ class GroovyJsonReader implements Closeable
                 return o
             }
 
-            if (isPrimitive(o.getClass()))
+            if (MetaUtils.isPrimitive(o.getClass()))
             {
                 return o.toString()
             }
@@ -1381,7 +1371,7 @@ class GroovyJsonReader implements Closeable
             return
         }
 
-        final boolean isPrimitive = isPrimitive(compType)
+        final boolean isPrimitive = MetaUtils.isPrimitive(compType)
         final Object array = jsonObj.getTarget()
         final Object[] items =  jsonObj.getArray()
 
@@ -1458,7 +1448,7 @@ class GroovyJsonReader implements Closeable
                 {    // Convert JSON HashMap to Groovy Object instance and assign values
                     Object arrayElement = createGroovyInstance(compType, jsonObject)
                     Array.set(array, i, arrayElement)
-                    if (!isLogicalPrimitive(arrayElement.getClass()))
+                    if (!MetaUtils.isLogicalPrimitive(arrayElement.getClass()))
                     {    // Skip walking primitives, primitive wrapper classes, Strings, and Classes
                         stack.addFirst(jsonObject)
                     }
@@ -1626,7 +1616,7 @@ class GroovyJsonReader implements Closeable
                 {
                     createGroovyInstance(Object.class, jObj)
 
-                    if (!isLogicalPrimitive(jObj.getTargetClass()))
+                    if (!MetaUtils.isLogicalPrimitive(jObj.getTargetClass()))
                     {
                         convertMapsToObjects(jObj)
                     }
@@ -1750,7 +1740,7 @@ class GroovyJsonReader implements Closeable
                 // improve the final types of values in the maps RHS, to be of the field type that
                 // was optionally specified in @type.
                 final Class fieldType = field.type
-                if (isPrimitive(fieldType))
+                if (MetaUtils.isPrimitive(fieldType))
                 {
                     jsonObj[(key)] = newPrimitiveWrapper(fieldType, value)
                 }
@@ -1917,7 +1907,7 @@ class GroovyJsonReader implements Closeable
                 else
                 {    // Assign ObjectMap's to Object (or derived) fields
                     field.set(target, createGroovyInstance(fieldType, jObj))
-                    if (!isLogicalPrimitive(jObj.getTargetClass()))
+                    if (!MetaUtils.isLogicalPrimitive(jObj.getTargetClass()))
                     {
                         stack.addFirst((JsonObject) rhs)
                     }
@@ -1925,7 +1915,7 @@ class GroovyJsonReader implements Closeable
             }
             else
             {
-                if (isPrimitive(fieldType))
+                if (MetaUtils.isPrimitive(fieldType))
                 {
                     field.set(target, newPrimitiveWrapper(fieldType, rhs))
                 }
@@ -2214,7 +2204,7 @@ class GroovyJsonReader implements Closeable
             }
             else
             {    // Handle regular field.object reference
-                if (isPrimitive(c))
+                if (MetaUtils.isPrimitive(c))
                 {
                     mate = newPrimitiveWrapper(c, jsonObj['value'])
                 }
@@ -2867,7 +2857,7 @@ class GroovyJsonReader implements Closeable
         for (int i = 0; i < argTypes.length; i++)
         {
             final Class argType = argTypes[i]
-            if (isPrimitive(argType))
+            if (MetaUtils.isPrimitive(argType))
             {
                 values[i] = newPrimitiveWrapper(argType, null)
             }
@@ -2965,20 +2955,6 @@ class GroovyJsonReader implements Closeable
         }
 
         return values
-    }
-
-    public static boolean isPrimitive(Class c)
-    {
-        return c.isPrimitive() || prims.contains(c)
-    }
-
-    public static boolean isLogicalPrimitive(Class c)
-    {
-        return isPrimitive(c) ||
-                String.class.isAssignableFrom(c) ||
-                Number.class.isAssignableFrom(c) ||
-                Date.class.isAssignableFrom(c) ||
-                Class.getClass().isAssignableFrom(c)
     }
 
     private static Object newPrimitiveWrapper(Class c, Object rhs) throws IOException
