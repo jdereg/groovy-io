@@ -2605,9 +2605,28 @@ class GroovyJsonReader implements Closeable
                 case STATE_HEX_DIGITS:
                     switch((char)c)
                     {
-                        case '0'..'9':
-                        case 'A'..'F':
-                        case 'a'..'f':
+                        case '0':
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+                        case '8':
+                        case '9':
+                        case 'A':
+                        case 'B':
+                        case 'C':
+                        case 'D':
+                        case 'E':
+                        case 'F':
+                        case 'a':
+                        case 'b':
+                        case 'c':
+                        case 'd':
+                        case 'e':
+                        case 'f':
                             hexBuf.append((char) c)
                             if (hexBuf.length() == 4)
                             {
