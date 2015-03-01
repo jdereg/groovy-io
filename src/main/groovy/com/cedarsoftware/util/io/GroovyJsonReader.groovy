@@ -3,10 +3,7 @@ package com.cedarsoftware.util.io
 import groovy.transform.CompileStatic
 
 import java.lang.reflect.Array
-import java.lang.reflect.Constructor
 import java.lang.reflect.Field
-import java.lang.reflect.InvocationTargetException
-import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.lang.reflect.TypeVariable
@@ -66,10 +63,8 @@ class GroovyJsonReader implements Closeable
     private static final int STATE_READ_FIELD = 1
     private static final int STATE_READ_VALUE = 2
     private static final int STATE_READ_POST_VALUE = 3
-    private static final int SNIPPET_LENGTH = 200
     private static final String EMPTY_ARRAY = '~!a~'  // compared with ==
     private static final String EMPTY_OBJECT = '~!o~'  // compared with ==
-    private static final Map<Class, Object[]> constructors = new ConcurrentHashMap<>()
     private static final Map<String, String> stringCache = [
             '':'',
             'true':'true',
@@ -107,7 +102,6 @@ class GroovyJsonReader implements Closeable
             '8':'8',
             '9':'9'
     ]
-    private static final Class[] emptyClassArray = [] as Class[]
     private static final Map<Class, JsonTypeReader> readers = [
             (String.class):new StringReader(),
             (Date.class):new DateReader(),
@@ -162,11 +156,6 @@ class GroovyJsonReader implements Closeable
     private static final Pattern timePattern2 = Pattern.compile('(\\d{2})[.:](\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?')
     private static final Pattern timePattern3 = Pattern.compile('(\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?')
     private static final Pattern dayPattern = Pattern.compile(days, Pattern.CASE_INSENSITIVE)
-    private static final Collection unmodifiableCollection = Collections.unmodifiableCollection([])
-    private static final Collection unmodifiableSet = Collections.unmodifiableSet(new HashSet())
-    private static final Collection unmodifiableSortedSet = Collections.unmodifiableSortedSet(new TreeSet())
-    private static final Map unmodifiableMap = Collections.unmodifiableMap(new HashMap())
-    private static final Map unmodifiableSortedMap = Collections.unmodifiableSortedMap(new TreeMap())
     private static final Map<Class, JsonTypeReader> readerCache = new ConcurrentHashMap<>()
     private static final NullClass nullReader = new NullClass()
     private final Map<Long, JsonObject> _objsRead = [:]
@@ -177,27 +166,13 @@ class GroovyJsonReader implements Closeable
     private final char[] numBuf = new char[256]
     private final StringBuilder strBuf = new StringBuilder()
     private final StringBuilder hexBuf = new StringBuilder()
+    private static Closure errorHandler = {
+        String msg, Exception e = null ->
+            if (e == null) error(msg)
+            else error(msg, e)
+    }
 
     static final ThreadLocal<FastPushbackReader> threadInput = new ThreadLocal<>()
-
-	private static boolean useUnsafe = false
-	private static Unsafe unsafe
-
-    public static void setUseUnsafe(boolean state)
-    {
-        useUnsafe = state
-        if (state)
-        {
-            try
-            {
-                unsafe = new Unsafe()
-            }
-            catch (ReflectiveOperationException e)
-            {
-                useUnsafe = false
-            }
-        }
-    }
 
     static
     {
@@ -1367,7 +1342,7 @@ class GroovyJsonReader implements Closeable
             }
             else if (isPrimitive)
             {   // Primitive component type array
-                Array.set(array, i, newPrimitiveWrapper(compType, element))
+                Array.set(array, i, MetaUtils.newPrimitiveWrapper(compType, element, errorHandler))
             }
             else if (element.getClass().isArray())
             {   // Array of arrays
@@ -1689,7 +1664,7 @@ class GroovyJsonReader implements Closeable
                 JsonObject<String, Object> jObj = (JsonObject) value
                 if (field != null && JsonObject.isPrimitiveWrapper(field.type))
                 {
-                    jObj['value'] = newPrimitiveWrapper(field.type, jObj['value'])
+                    jObj['value'] = MetaUtils.newPrimitiveWrapper(field.type, jObj['value'], errorHandler)
                     continue
                 }
                 Long ref = (Long) jObj['@ref']
@@ -1714,7 +1689,7 @@ class GroovyJsonReader implements Closeable
                 final Class fieldType = field.type
                 if (MetaUtils.isPrimitive(fieldType))
                 {
-                    jsonObj[(key)] = newPrimitiveWrapper(fieldType, value)
+                    jsonObj[(key)] = MetaUtils.newPrimitiveWrapper(fieldType, value, errorHandler)
                 }
                 else if (BigDecimal.class == fieldType)
                 {
@@ -1816,7 +1791,7 @@ class GroovyJsonReader implements Closeable
             {
                 if (fieldType.isPrimitive())
                 {
-                    field.set(target, newPrimitiveWrapper(fieldType, "0"))
+                    field.set(target, MetaUtils.newPrimitiveWrapper(fieldType, "0", errorHandler))
                 }
                 else
                 {
@@ -1889,7 +1864,7 @@ class GroovyJsonReader implements Closeable
             {
                 if (MetaUtils.isPrimitive(fieldType))
                 {
-                    field.set(target, newPrimitiveWrapper(fieldType, rhs))
+                    field.set(target, MetaUtils.newPrimitiveWrapper(fieldType, rhs, errorHandler))
                 }
                 else if (rhs instanceof String && "".equals(((String) rhs).trim()) && fieldType != String.class)
                 {   // Allow "" to null out a non-String field
@@ -2178,7 +2153,7 @@ class GroovyJsonReader implements Closeable
             {    // Handle regular field.object reference
                 if (MetaUtils.isPrimitive(c))
                 {
-                    mate = newPrimitiveWrapper(c, jsonObj['value'])
+                    mate = MetaUtils.newPrimitiveWrapper(c, jsonObj['value'], errorHandler)
                 }
                 else if (c == Class.class)
                 {
@@ -2653,275 +2628,6 @@ class GroovyJsonReader implements Closeable
         return cacheHit == null ? s : cacheHit
     }
 
-    public static Object newInstance(Class c) throws IOException
-    {
-        if (factory.containsKey(c))
-        {
-            return factory[(c)].newInstance(c)
-        }
-        if (unmodifiableSortedMap.getClass().isAssignableFrom(c))
-        {
-            return new TreeMap()
-        }
-        if (unmodifiableMap.getClass().isAssignableFrom(c))
-        {
-            return [:]
-        }
-        if (unmodifiableSortedSet.getClass().isAssignableFrom(c))
-        {
-            return new TreeSet()
-        }
-        if (unmodifiableSet.getClass().isAssignableFrom(c))
-        {
-            return new LinkedHashSet()
-        }
-        if (unmodifiableCollection.getClass().isAssignableFrom(c))
-        {
-            return []
-        }
-
-        // Constructor not cached, go find a constructor
-        Object[] constructorInfo = constructors[(c)]
-        if (constructorInfo != null)
-        {   // Constructor was cached
-            Constructor constructor = (Constructor) constructorInfo[0]
-
-            if (constructor == null && useUnsafe)
-            {   // null constructor --> set to null when object instantiated with unsafe.allocateInstance()
-                try
-                {
-                    return unsafe.allocateInstance(c)
-                }
-                catch (Exception e)
-                {
-                    // Should never happen, as the code that fetched the constructor was able to instantiate it once already
-                    error("Could not instantiate " + c.getName(), e)
-                }
-            }
-
-            Boolean useNull = (Boolean) constructorInfo[1]
-            Class[] paramTypes = constructor.parameterTypes
-            if (paramTypes == null || paramTypes.length == 0)
-            {
-                try
-                {
-                    return constructor.newInstance()
-                }
-                catch (Exception e)
-                {   // Should never happen, as the code that fetched the constructor was able to instantiate it once already
-                    error("Could not instantiate " + c.getName(), e)
-                }
-            }
-            Object[] values = fillArgs(paramTypes, useNull)
-            try
-            {
-                return constructor.newInstance(values)
-            }
-            catch (Exception e)
-            {   // Should never happen, as the code that fetched the constructor was able to instantiate it once already
-                error("Could not instantiate " + c.getName(), e)
-            }
-        }
-
-        Object[] ret = newInstanceEx(c)
-        constructors[(c)] = [ret[1], ret[2]] as Object[]
-        return ret[0]
-    }
-
-    /**
-     * Return constructor and instance as elements 0 and 1, respectively.
-     */
-    private static Object[] newInstanceEx(Class c) throws IOException
-    {
-        try
-        {
-            Constructor constructor = c.getConstructor(emptyClassArray)
-            if (constructor != null)
-            {
-                return [constructor.newInstance(), constructor, true] as Object[]
-            }
-            return tryOtherConstruction(c)
-        }
-        catch (Exception e)
-        {
-            // OK, this class does not have a public no-arg constructor.  Instantiate with
-            // first constructor found, filling in constructor values with null or
-            // defaults for primitives.
-            return tryOtherConstruction(c)
-        }
-    }
-
-    private static Object[] tryOtherConstruction(Class c) throws IOException
-    {
-        Constructor[] constructors = c.declaredConstructors
-        if (constructors.length == 0)
-        {
-            error("Cannot instantiate '" + c.getName() + "' - Primitive, interface, array[] or void")
-        }
-
-        // Try each constructor (private, protected, or public) with null values for non-primitives.
-        for (Constructor constructor : constructors)
-        {
-            constructor.accessible = true
-            Class[] argTypes = constructor.parameterTypes
-            Object[] values = fillArgs(argTypes, true)
-            try
-            {
-                return [constructor.newInstance(values), constructor, true] as Object[]
-            }
-            catch (Exception ignored)
-            { }
-        }
-
-        // Try each constructor (private, protected, or public) with non-null values for primitives.
-        for (Constructor constructor : constructors)
-        {
-            constructor.accessible = true
-            Class[] argTypes = constructor.parameterTypes
-            Object[] values = fillArgs(argTypes, false)
-            try
-            {
-                return [constructor.newInstance(values), constructor, false] as Object[]
-            }
-            catch (Exception ignored)
-            { }
-        }
-
-        // Try instantiation via unsafe
-        // This may result in heapdumps for e.g. ConcurrentHashMap or can cause problems when the class is not initialized
-        // Thats why we try ordinary constructors first
-        if (useUnsafe)
-        {
-            try
-            {
-                return [unsafe.allocateInstance(c), null, null] as Object[]
-            }
-            catch (Exception ignored)
-            { }
-        }
-
-        error("Could not instantiate " + c.getName() + " using any constructor")
-        return null
-    }
-
-    private static Object[] fillArgs(Class[] argTypes, boolean useNull) throws IOException
-    {
-        final Object[] values = new Object[argTypes.length]
-        for (int i = 0; i < argTypes.length; i++)
-        {
-            final Class argType = argTypes[i]
-            if (MetaUtils.isPrimitive(argType))
-            {
-                values[i] = newPrimitiveWrapper(argType, null)
-            }
-            else if (useNull)
-            {
-                values[i] = null
-            }
-            else
-            {
-                if (argType == String.class)
-                {
-                    values[i] = ""
-                }
-                else if (argType == Date.class)
-                {
-                    values[i] = new Date()
-                }
-                else if (List.class.isAssignableFrom(argType))
-                {
-                    values[i] = []
-                }
-                else if (SortedSet.class.isAssignableFrom(argType))
-                {
-                    values[i] = new TreeSet()
-                }
-                else if (Set.class.isAssignableFrom(argType))
-                {
-                    values[i] = new LinkedHashSet()
-                }
-                else if (SortedMap.class.isAssignableFrom(argType))
-                {
-                    values[i] = new TreeMap()
-                }
-                else if (Map.class.isAssignableFrom(argType))
-                {
-                    values[i] = [:]
-                }
-                else if (Collection.class.isAssignableFrom(argType))
-                {
-                    values[i] = []
-                }
-                else if (Calendar.class.isAssignableFrom(argType))
-                {
-                    values[i] = Calendar.instance
-                }
-                else if (TimeZone.class.isAssignableFrom(argType))
-                {
-                    values[i] = TimeZone.default
-                }
-                else if (argType == BigInteger.class)
-                {
-                    values[i] = BigInteger.TEN
-                }
-                else if (argType == BigDecimal.class)
-                {
-                    values[i] = BigDecimal.TEN
-                }
-                else if (argType == StringBuilder.class)
-                {
-                    values[i] = new StringBuilder()
-                }
-                else if (argType == StringBuffer.class)
-                {
-                    values[i] = new StringBuffer()
-                }
-                else if (argType == Locale.class)
-                {
-                    values[i] = Locale.FRANCE  // overwritten
-                }
-                else if (argType == Class.class)
-                {
-                    values[i] = String.class
-                }
-                else if (argType == Timestamp.class)
-                {
-                    values[i] = new Timestamp(System.currentTimeMillis())
-                }
-                else if (argType == java.sql.Date.class)
-                {
-                    values[i] = new java.sql.Date(System.currentTimeMillis())
-                }
-                else if (argType == URL.class)
-                {
-                    values[i] = new URL("http://localhost") // overwritten
-                }
-                else if (argType == Object.class)
-                {
-                    values[i] = new Object()
-                }
-                else
-                {
-                    values[i] = null
-                }
-            }
-        }
-
-        return values
-    }
-
-    private static Object newPrimitiveWrapper(Class c, Object rhs) throws IOException
-    {
-        try
-        {
-            return MetaUtils.newPrimitiveWrapper(c, rhs);
-        }
-        catch (Exception e)
-        {
-            return error("Unable to convert value", e);
-        }
-    }
-
     private static boolean isDigit(int c)
     {
         return c >= 0x30 && c <= 0x39
@@ -3113,6 +2819,15 @@ class GroovyJsonReader implements Closeable
         }
     }
 
+    static Object newInstance(Class c) throws IOException
+    {
+        if (factory.containsKey(c))
+        {
+            return factory.get(c).newInstance(c);
+        }
+        return MetaUtils.newInstance(c, errorHandler);
+    }
+
     private static String getErrorMessage(String msg)
     {
         if (threadInput.get() != null)
@@ -3150,167 +2865,6 @@ class GroovyJsonReader implements Closeable
         catch (Exception e)
         {
             error("Unable to create class: " + name, e);
-        }
-    }
-
-    /**
-     * Wrapper for unsafe, decouples direct usage of sun.misc.* package.
-     * @author Kai Hufenback
-     */
-    static final class Unsafe
-    {
-    	private final Object sunUnsafe
-    	private final Method allocateInstance
-
-    	/**
-    	 * Constructs unsafe object, acting as a wrapper.
-    	 * @throws ReflectiveOperationException
-    	 */
-    	public Unsafe() throws ReflectiveOperationException
-        {
-    		try
-            {
-    			Constructor<Unsafe> unsafeConstructor = classForName("sun.misc.Unsafe").getDeclaredConstructor()
-    			unsafeConstructor.setAccessible(true)
-                sunUnsafe = unsafeConstructor.newInstance()
-    			allocateInstance = sunUnsafe.getClass().getMethod("allocateInstance", Class.class)
-    			allocateInstance.setAccessible(true)
-    		}
-            catch(Exception e)
-            {
-    			throw new ReflectiveOperationException(e)
-    		}
-    	}
-
-    	/**
-    	 * Creates an object without invoking constructor or initializing variables.
-    	 * <b>Be careful using this with JDK objects, like URL or ConcurrentHashMap this may bring your VM into troubles.</b>
-    	 * @param clazz to instantiate
-    	 * @return allocated Object
-    	 */
-        public Object allocateInstance(Class clazz)
-        {
-            try
-            {
-                return allocateInstance.invoke(sunUnsafe, clazz)
-            }
-            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
-            {
-                throw new RuntimeException(e)
-            }
-        }
-    }
-
-    /**
-     * This class adds significant performance increase over using the JDK
-     * PushbackReader.  This is due to this class not using synchronization
-     * as it is not needed.
-     */
-    private static final class FastPushbackReader extends FilterReader
-    {
-        private final int[] buf
-        private final int[] snippet
-        private int idx
-        private int line
-        private int col
-        private int snippetLoc = 0
-
-        FastPushbackReader(Reader reader, int size)
-        {
-            super(reader)
-            if (size <= 0)
-            {
-                throw new IllegalArgumentException("size <= 0")
-            }
-            buf = new int[size]
-            idx = size
-            snippet = new int[SNIPPET_LENGTH]
-            line = 1
-            col = 0
-        }
-
-        FastPushbackReader(Reader r)
-        {
-            this(r, 1)
-        }
-
-        private String getLastSnippet()
-        {
-            StringBuilder s = new StringBuilder()
-            for (int i=snippetLoc; i < SNIPPET_LENGTH; i++)
-            {
-                if (appendChar(s, i))
-                {
-                    break
-                }
-            }
-            for (int i=0; i < snippetLoc; i++)
-            {
-                if (appendChar(s, i))
-                {
-                    break
-                }
-            }
-            return s.toString();
-        }
-
-        private boolean appendChar(StringBuilder s, int i)
-        {
-            try
-            {
-                s.appendCodePoint(snippet[i])
-            }
-            catch (Exception e)
-            {
-                return true
-            }
-            return false
-        }
-
-        public int read() throws IOException
-        {
-            final int ch = idx < buf.length ? buf[idx++] : super.read()
-            if (ch >= 0)
-            {
-                if (ch == 0x0a)
-                {
-                    line++
-                    col = 0
-                }
-                else
-                {
-                    col++
-                }
-                snippet[snippetLoc++] = ch
-                if (snippetLoc >= SNIPPET_LENGTH)
-                {
-                    snippetLoc = 0
-                }
-            }
-            return ch
-        }
-
-        public void unread(int c) throws IOException
-        {
-            if (idx == 0)
-            {
-                error("unread(int c) called more than buffer size (" + buf.length + ")")
-            }
-            if (c == 0x0a)
-            {
-                line--
-            }
-            else
-            {
-                col--
-            }
-            buf[--idx] = c
-            snippetLoc--
-            if (snippetLoc < 0)
-            {
-                snippetLoc = SNIPPET_LENGTH - 1
-            }
-            snippet[snippetLoc] = c
         }
     }
 }

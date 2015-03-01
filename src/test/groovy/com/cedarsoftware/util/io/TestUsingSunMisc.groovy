@@ -1,6 +1,9 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
 import org.junit.Test
+
+import static org.junit.Assert.fail
 
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
@@ -19,6 +22,7 @@ import org.junit.Test
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestUsingSunMisc
 {
     static class ShouldBeImpossibleToInstantiate
@@ -62,17 +66,17 @@ class TestUsingSunMisc
     void testDirectCreation() throws Exception
     {
         // sun.misc.Unsafe does not appear to work with Groovy in @CompileStatic mode
-//        GroovyJsonReader.useUnsafe = true;
-//        // this test will fail without directCreation
-//        Dog.OtherShoe shoe = Dog.OtherShoe.construct()
+        MetaUtils.useUnsafe = true;
+        // this test will fail without directCreation
+        Dog.OtherShoe shoe = Dog.OtherShoe.construct()
 //        Dog.OtherShoe oShoe = (Dog.OtherShoe) GroovyJsonReader.jsonToGroovy((GroovyJsonWriter.objectToJson(shoe)))
-//        assertTrue(shoe.equals(oShoe))
+//        assert shoe.equals(oShoe)
 //        oShoe = (Dog.OtherShoe) GroovyJsonReader.jsonToGroovy((GroovyJsonWriter.objectToJson(shoe)))
-//        assertTrue(shoe.equals(oShoe))
+//        assert shoe.equals(oShoe)
 //
 //        try
 //        {
-//            GroovyJsonReader.useUnsafe = false;
+//            MetaUtils.useUnsafe = false;
 //            shoe = Dog.OtherShoe.construct()
 //            GroovyJsonReader.jsonToGroovy((GroovyJsonWriter.objectToJson(shoe)))
 //            fail()
@@ -81,41 +85,41 @@ class TestUsingSunMisc
 //        {
 //        }
 //
-//        GroovyJsonReader.useUnsafe = true;
+//        MetaUtils.useUnsafe = true;
 //        // this test will fail without directCreation
 //        Dog.OtherShoe.construct()
 //        oShoe = (Dog.OtherShoe) GroovyJsonReader.jsonToGroovy((GroovyJsonWriter.objectToJson(shoe)))
-//        assertTrue(shoe.equals(oShoe))
+//        assert shoe.equals(oShoe)
     }
 
     @Test
     void testImpossibleClass() throws Exception
     {
         // sun.misc.Unsafe does not appear to work with Groovy in @CompileStatic mode
-//        try
-//        {
-//            ShouldBeImpossibleToInstantiate s = new ShouldBeImpossibleToInstantiate()
-//            fail()
-//        }
-//        catch (Exception e)
-//        {
-//            e.message.toLowerCase().concat("go away")
-//        }
-//
-//        String json = '{"@type":"' + ShouldBeImpossibleToInstantiate.class.name + '", "x":50}'
-//        try
-//        {
-//            GroovyJsonReader.jsonToGroovy(json)
-//            fail()
-//        }
-//        catch (Exception e)
-//        {
-//            e.message.toLowerCase().concat("go away")
-//        }
-//
-//        GroovyJsonReader.useUnsafe = true
-//        ShouldBeImpossibleToInstantiate s = GroovyJsonReader.jsonToGroovy(json)
+        try
+        {
+            ShouldBeImpossibleToInstantiate s = new ShouldBeImpossibleToInstantiate()
+            fail()
+        }
+        catch (Exception e)
+        {
+            e.message.toLowerCase().concat("go away")
+        }
+
+        String json = '{"@type":"' + ShouldBeImpossibleToInstantiate.class.name + '", "x":50}'
+        try
+        {
+            GroovyJsonReader.jsonToGroovy(json)
+            fail()
+        }
+        catch (Exception e)
+        {
+            e.message.toLowerCase().concat("go away")
+        }
+
+        MetaUtils.setUseUnsafe(true)
+//        ShouldBeImpossibleToInstantiate s = (ShouldBeImpossibleToInstantiate) GroovyJsonReader.jsonToGroovy(json)
 //        assert s.x == 50
-//        GroovyJsonReader.useUnsafe = false
+//        MetaUtils.setUseUnsafe(false)
     }
 }
