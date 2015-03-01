@@ -2378,7 +2378,7 @@ class GroovyJsonReader implements Closeable
                 error("EOF reached prematurely")
         }
 
-        if (isDigit(c) || c == '-')
+        if (c >= 0x30 && c <= 0x39 || c == '-')
         {
             return readNumber(c)
         }
@@ -2628,10 +2628,6 @@ class GroovyJsonReader implements Closeable
         return cacheHit == null ? s : cacheHit
     }
 
-    private static boolean isDigit(int c)
-    {
-        return c >= 0x30 && c <= 0x39
-    }
 
     /**
      * Read until non-whitespace character and then return it.
