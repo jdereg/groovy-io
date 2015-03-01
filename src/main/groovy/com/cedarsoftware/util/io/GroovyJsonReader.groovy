@@ -1624,55 +1624,50 @@ class GroovyJsonReader implements Closeable
         return javaKeys
     }
 
-    protected void traverseFieldsNoObj(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj) throws IOException
+    protected void traverseFieldsNoObj(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj) throws IOException
     {
         final Object target = jsonObj.target
         for (Entry<String, Object> e : jsonObj.entrySet())
         {
-            String key = e.key
+            final String fieldName = e.key
 
-            if (key.charAt(0) == '@')
+            if (fieldName.charAt(0) == '@')
             {   // Skip our own meta fields
                 continue
             }
 
-            Field field = null
-            if (target != null)
-            {
-                field = MetaUtils.getField(target.getClass(), key)
-            }
+            final Field field = (target != null) ? MetaUtils.getField(target.getClass(), fieldName) : null
+            final Object rhs = e.value
 
-            Object value = e.value
-
-            if (value == null)
+            if (rhs == null)
             {
-                jsonObj[(key)] = null
+                jsonObj[fieldName] = null
             }
-            else if (EMPTY_OBJECT.is(value))
+            else if (EMPTY_OBJECT.is(rhs))
             {
-                jsonObj[(key)] = new JsonObject()
+                jsonObj[fieldName] = new JsonObject()
             }
-            else if (value.getClass().isArray())
+            else if (rhs.getClass().isArray())
             {    // LHS of assignment is an [] field or RHS is an array and LHS is Object (Map)
-                JsonObject<String, Object> jsonArray = new JsonObject<>()
-                jsonArray['@items'] = value
+                final JsonObject<String, Object> jsonArray = new JsonObject<>()
+                jsonArray['@items'] = rhs
                 stack.addFirst(jsonArray)
-                jsonObj[(key)] = jsonArray
+                jsonObj[(fieldName)] = jsonArray
             }
-            else if (value instanceof JsonObject)
+            else if (rhs instanceof JsonObject)
             {
-                JsonObject<String, Object> jObj = (JsonObject) value
+                final JsonObject<String, Object> jObj = (JsonObject) rhs
                 if (field != null && JsonObject.isPrimitiveWrapper(field.type))
                 {
                     jObj['value'] = MetaUtils.newPrimitiveWrapper(field.type, jObj['value'], errorHandler)
                     continue
                 }
-                Long ref = (Long) jObj['@ref']
+                final Long ref = (Long) jObj['@ref']
 
                 if (ref != null)
                 {    // Correct field references
                     JsonObject refObject = getReferencedObj(ref)
-                    jsonObj[(key)] = refObject    // Update Map-of-Maps reference
+                    jsonObj[(fieldName)] = refObject    // Update Map-of-Maps reference
                 }
                 else
                 {
@@ -1689,23 +1684,23 @@ class GroovyJsonReader implements Closeable
                 final Class fieldType = field.type
                 if (MetaUtils.isPrimitive(fieldType))
                 {
-                    jsonObj[(key)] = MetaUtils.newPrimitiveWrapper(fieldType, value, errorHandler)
+                    jsonObj[fieldName] = MetaUtils.newPrimitiveWrapper(fieldType, rhs, errorHandler)
                 }
                 else if (BigDecimal.class == fieldType)
                 {
-                    jsonObj[(key)] = bigDecimalFrom(value)
+                    jsonObj[fieldName] = bigDecimalFrom(rhs)
                 }
                 else if (BigInteger.class == fieldType)
                 {
-                    jsonObj[(key)] = bigIntegerFrom(value)
+                    jsonObj[fieldName] = bigIntegerFrom(rhs)
                 }
-                else if (value instanceof String)
+                else if (rhs instanceof String)
                 {
                     if (fieldType != String.class && fieldType != StringBuilder.class && fieldType != StringBuffer.class)
                     {
-                        if ("".equals(((String)value).trim()))
+                        if ("".equals(((String)rhs).trim()))
                         {   // Allow "" to null out a non-String field on the inbound JSON
-                            jsonObj[(key)] = null
+                            jsonObj[fieldName] = null
                         }
                     }
                 }
@@ -1766,27 +1761,6 @@ class GroovyJsonReader implements Closeable
         try
         {
             final Class fieldType = field.type
-
-            // If there is a "tree" of objects (e.g, Map<String, List<Person>>), the subobjects may not have an
-            // @type on them, if the source of the JSON is from JSON.stringify().  Deep traverse the args and
-            // mark @type on the items within the Maps and Collections, based on the parameterized type (if it
-            // exists).
-            if (rhs instanceof JsonObject && field.genericType instanceof ParameterizedType)
-            {   // Only JsonObject instances could contain unmarked objects.
-                markUntypedObjects(field.genericType, rhs, MetaUtils.getDeepDeclaredFields(fieldType))
-            }
-
-            if (rhs instanceof JsonObject)
-            {   // Ensure .setType() field set on JsonObject
-                JsonObject job = (JsonObject) rhs
-                String type = job.type
-                if (type == null || type.isEmpty())
-                {
-                    job.type = fieldType.name
-                }
-            }
-
-            Object special
             if (rhs == null)
             {
                 if (fieldType.isPrimitive())
@@ -1797,8 +1771,31 @@ class GroovyJsonReader implements Closeable
                 {
                     field.set(target, null)
                 }
+                return
             }
-            else if (EMPTY_OBJECT.is(rhs))
+
+            // If there is a "tree" of objects (e.g, Map<String, List<Person>>), the subobjects may not have an
+            // @type on them, if the source of the JSON is from JSON.stringify().  Deep traverse the args and
+            // mark @type on the items within the Maps and Collections, based on the parameterized type (if it
+            // exists).
+            if (rhs instanceof JsonObject)
+            {
+                if (field.genericType instanceof ParameterizedType)
+                {   // Only JsonObject instances could contain unmarked objects.
+                    markUntypedObjects(field.genericType, rhs, MetaUtils.getDeepDeclaredFields(fieldType))
+                }
+
+                // Ensure .setType() field set on JsonObject
+                JsonObject job = (JsonObject) rhs
+                String type = job.type
+                if (type == null || type.isEmpty())
+                {
+                    job.type = fieldType.name
+                }
+            }
+
+            Object special
+            if (EMPTY_OBJECT.is(rhs))
             {
                 JsonObject jObj = new JsonObject()
                 jObj.type = fieldType.name
