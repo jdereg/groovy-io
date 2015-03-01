@@ -69,8 +69,6 @@ class GroovyJsonReader implements Closeable
     private static final int SNIPPET_LENGTH = 200
     private static final String EMPTY_ARRAY = '~!a~'  // compared with ==
     private static final String EMPTY_OBJECT = '~!o~'  // compared with ==
-    private static final Character[] charCache = new Character[128]
-    private static final Byte[] byteCache = new Byte[256]
     private static final Map<Class, Object[]> constructors = new ConcurrentHashMap<>()
     private static final Map<String, String> stringCache = [
             '':'',
@@ -164,7 +162,6 @@ class GroovyJsonReader implements Closeable
     private static final Pattern timePattern2 = Pattern.compile('(\\d{2})[.:](\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?')
     private static final Pattern timePattern3 = Pattern.compile('(\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?')
     private static final Pattern dayPattern = Pattern.compile(days, Pattern.CASE_INSENSITIVE)
-    private static final Pattern extraQuotes = Pattern.compile('(["]*)([^"]*)(["]*)')
     private static final Collection unmodifiableCollection = Collections.unmodifiableCollection([])
     private static final Collection unmodifiableSet = Collections.unmodifiableSet(new HashSet())
     private static final Collection unmodifiableSortedSet = Collections.unmodifiableSortedSet(new TreeSet())
@@ -204,18 +201,6 @@ class GroovyJsonReader implements Closeable
 
     static
     {
-        // Save memory by re-using common Characters (Characters are immutable)
-        for (int i = 0; i < charCache.length; i++)
-        {
-            charCache[i] = new Character((char)i)
-        }
-
-        // Save memory by re-using all byte instances (Bytes are immutable)
-        for (int i = 0; i < byteCache.length; i++)
-        {
-            byteCache[i] = (byte) (i - 128)
-        }
-
         ClassFactory colFactory = new CollectionFactory()
         assignInstantiator(Collection.class, colFactory)
         assignInstantiator(List.class, colFactory)
@@ -747,7 +732,7 @@ class GroovyJsonReader implements Closeable
             }
             try
             {
-                return new BigInteger(removeLeadingAndTrailingQuotes(s))
+                return new BigInteger(MetaUtils.removeLeadingAndTrailingQuotes(s))
             }
             catch (Exception e)
             {
@@ -847,7 +832,7 @@ class GroovyJsonReader implements Closeable
             }
             try
             {
-                return new BigDecimal(removeLeadingAndTrailingQuotes(s))
+                return new BigDecimal(MetaUtils.removeLeadingAndTrailingQuotes(s))
             }
             catch (Exception e)
             {
@@ -2652,7 +2637,7 @@ class GroovyJsonReader implements Closeable
                             if (hexBuf.length() == 4)
                             {
                                 int value = Integer.parseInt(hexBuf.toString(), 16)
-                                str.append(valueOf((char) value))
+                                str.append(MetaUtils.valueOf((char) value))
                                 state = STATE_STRING_START
                             }
                             break
@@ -2927,127 +2912,14 @@ class GroovyJsonReader implements Closeable
 
     private static Object newPrimitiveWrapper(Class c, Object rhs) throws IOException
     {
-
-        final String cname = c.getName()
-        switch(cname)
+        try
         {
-            case "boolean":
-            case "java.lang.Boolean":
-                if (rhs instanceof String)
-                {
-                    rhs = removeLeadingAndTrailingQuotes((String) rhs)
-                    if ("".equals(rhs))
-                    {
-                        rhs = "false"
-                    }
-                    return Boolean.parseBoolean((String)rhs)
-                }
-                return rhs != null ? rhs : Boolean.FALSE
-            case "byte":
-            case "java.lang.Byte":
-                if (rhs instanceof String)
-                {
-                    rhs = removeLeadingAndTrailingQuotes((String) rhs)
-                    if ("".equals(rhs))
-                    {
-                        rhs = "0"
-                    }
-                    return Byte.parseByte((String)rhs)
-                }
-                return rhs != null ? byteCache[((Number) rhs).byteValue() + 128] : (byte) 0
-            case "char":
-            case "java.lang.Character":
-                if (rhs == null)
-                {
-                    return (char)'\u0000'
-                }
-                if (rhs instanceof String)
-                {
-                    rhs = removeLeadingAndTrailingQuotes((String) rhs)
-                    if ("".equals(rhs))
-                    {
-                        rhs = "\u0000"
-                    }
-                    return valueOf(((String) rhs).charAt(0))
-                }
-                if (rhs instanceof Character)
-                {
-                    return rhs
-                }
-                break
-            case "double":
-            case "java.lang.Double":
-                if (rhs instanceof String)
-                {
-                    rhs = removeLeadingAndTrailingQuotes((String) rhs)
-                    if ("".equals(rhs))
-                    {
-                        rhs = "0.0"
-                    }
-                    return Double.parseDouble((String)rhs)
-                }
-                return rhs != null ? rhs : 0.0d
-            case "float":
-            case "java.lang.Float":
-                if (rhs instanceof String)
-                {
-                    rhs = removeLeadingAndTrailingQuotes((String) rhs)
-                    if ("".equals(rhs))
-                    {
-                        rhs = "0.0f"
-                    }
-                    return Float.parseFloat((String)rhs)
-                }
-                return rhs != null ? ((Number) rhs).floatValue() : 0.0f
-            case "int":
-            case "java.lang.Integer":
-                if (rhs instanceof String)
-                {
-                    rhs = removeLeadingAndTrailingQuotes((String) rhs)
-                    if ("".equals(rhs))
-                    {
-                        rhs = "0"
-                    }
-                    return Integer.parseInt((String)rhs)
-                }
-                return rhs != null ? ((Number) rhs).intValue() : 0
-            case "long":
-            case "java.lang.Long":
-                if (rhs instanceof String)
-                {
-                    rhs = removeLeadingAndTrailingQuotes((String) rhs)
-                    if ("".equals(rhs))
-                    {
-                        rhs = "0"
-                    }
-                    return Long.parseLong((String)rhs)
-                }
-                return rhs != null ? rhs : 0L
-            case "short":
-            case "java.lang.Short":
-                if (rhs instanceof String)
-                {
-                    rhs = removeLeadingAndTrailingQuotes((String) rhs)
-                    if ("".equals(rhs))
-                    {
-                        rhs = "0"
-                    }
-                    return Short.parseShort((String)rhs)
-                }
-                return rhs != null ? ((Number) rhs).shortValue() : (short) 0
+            return MetaUtils.newPrimitiveWrapper(c, rhs);
         }
-
-        return error("Class '" + cname + "' requested for special instantiation - isPrimitive() does not match newPrimitiveWrapper()")
-    }
-
-    static String removeLeadingAndTrailingQuotes(String s)
-    {
-        Matcher m = extraQuotes.matcher(s)
-        if (m.find())
+        catch (Exception e)
         {
-            s = m.group(2)
+            return error("Unable to convert value", e);
         }
-        return s
     }
 
     private static boolean isDigit(int c)
@@ -3279,18 +3151,6 @@ class GroovyJsonReader implements Closeable
         {
             error("Unable to create class: " + name, e);
         }
-    }
-
-    /**
-     * This is a performance optimization.  The lowest 128 characters are re-used.
-     *
-     * @param c char to match to a Character.
-     * @return a Character that matches the passed in char.  If the value is
-     *         less than 127, then the same Character instances are re-used.
-     */
-    private static Character valueOf(char c)
-    {
-        return c <= 127 ? charCache[(int) c] : c
     }
 
     /**

@@ -43,15 +43,15 @@ class TestInternalAPIs
     @Test
     void testCleanString()
     {
-        String s = GroovyJsonReader.removeLeadingAndTrailingQuotes('"Foo"')
+        String s = MetaUtils.removeLeadingAndTrailingQuotes('"Foo"')
         assert "Foo" == s
-        s = GroovyJsonReader.removeLeadingAndTrailingQuotes("Foo")
+        s = MetaUtils.removeLeadingAndTrailingQuotes("Foo")
         assert "Foo" == s
-        s = GroovyJsonReader.removeLeadingAndTrailingQuotes('"Foo')
+        s = MetaUtils.removeLeadingAndTrailingQuotes('"Foo')
         assert "Foo" == s
-        s = GroovyJsonReader.removeLeadingAndTrailingQuotes('Foo"')
+        s = MetaUtils.removeLeadingAndTrailingQuotes('Foo"')
         assert "Foo" == s
-        s = GroovyJsonReader.removeLeadingAndTrailingQuotes('""Foo""')
+        s = MetaUtils.removeLeadingAndTrailingQuotes('""Foo""')
         assert "Foo" == s
     }
 
