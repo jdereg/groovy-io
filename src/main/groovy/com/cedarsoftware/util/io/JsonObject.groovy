@@ -216,7 +216,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
                 return true
             }
         }
-        catch (IOException ignored)  { }
+        catch (Exception ignored)  { }
 
         return false
     }

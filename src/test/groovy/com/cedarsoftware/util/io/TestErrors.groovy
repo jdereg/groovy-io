@@ -375,9 +375,9 @@ class TestErrors
         }
         catch (IOException e)
         {
-            assertTrue(e.message.contains("class"))
-            assertTrue(e.message.contains("not"))
-            assertTrue(e.message.contains("created"))
+            assertTrue(e.message.toLowerCase().contains("unable"))
+            assertTrue(e.message.toLowerCase().contains("create"))
+            assertTrue(e.message.toLowerCase().contains("class"))
         }
 
         // Bad class inside a Collection
@@ -387,7 +387,12 @@ class TestErrors
             TestUtil.readJsonObject(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (IOException e)
+        {
+            assertTrue(e.message.toLowerCase().contains("class listed"))
+            assertTrue(e.message.toLowerCase().contains("@type"))
+            assertTrue(e.message.toLowerCase().contains("not found"))
+        }
     }
 
     @Test

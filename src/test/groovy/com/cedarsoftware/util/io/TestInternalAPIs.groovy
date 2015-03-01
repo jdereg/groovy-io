@@ -35,9 +35,9 @@ class TestInternalAPIs
     @Test
     void testDistanceToInterface() throws Exception
     {
-        assertEquals(1, GroovyJsonWriter.getDistanceToInterface(Serializable.class, LinkedList.class))
-        assertEquals(3, GroovyJsonWriter.getDistanceToInterface(Iterable.class, LinkedList.class))
-        assertEquals(2, GroovyJsonWriter.getDistanceToInterface(Serializable.class, BigInteger.class))
+        assertEquals(1, MetaUtils.getDistanceToInterface(Serializable.class, LinkedList.class))
+        assertEquals(3, MetaUtils.getDistanceToInterface(Iterable.class, LinkedList.class))
+        assertEquals(2, MetaUtils.getDistanceToInterface(Serializable.class, BigInteger.class))
     }
 
     @Test

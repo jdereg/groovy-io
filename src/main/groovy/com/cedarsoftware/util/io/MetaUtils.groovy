@@ -1,7 +1,9 @@
 package com.cedarsoftware.util.io
 
+import java.lang.reflect.Array
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
+import java.text.SimpleDateFormat
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -36,6 +38,25 @@ class MetaUtils
             Boolean.class,
             Character.class
     ] as Set
+    private static final Map<String, Class> nameToClass = [
+            'string':String.class,
+            'boolean':boolean.class,
+            'char':char.class,
+            'byte':byte.class,
+            'short':short.class,
+            'int':int.class,
+            'long':long.class,
+            'float':float.class,
+            'double':double.class,
+            'date':Date.class,
+            'class':Class.class
+    ]
+    protected static final ThreadLocal<SimpleDateFormat> dateFormat = new ThreadLocal<SimpleDateFormat>() {
+        public SimpleDateFormat initialValue()
+        {
+            return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+        }
+    }
 
     static Field getField(Class c, String field)
     {
@@ -173,7 +194,7 @@ class MetaUtils
      * @return boolean true if the passed in class is a Java primitive, false otherwise.  The Wrapper classes
      * Integer, Long, Boolean, etc. are consider primitives by this method.
      */
-    public static boolean isPrimitive(Class c)
+    static boolean isPrimitive(Class c)
     {
         return c.isPrimitive() || prims.contains(c)
     }
@@ -186,7 +207,7 @@ class MetaUtils
      * in JSON content (making the JSON more readable - less @id / @ref), without breaking the semantics (shape)
      * of the object graph being written.
      */
-    public static boolean isLogicalPrimitive(Class c)
+    static boolean isLogicalPrimitive(Class c)
     {
         return c.isPrimitive() ||
                 prims.contains(c) ||
@@ -196,4 +217,79 @@ class MetaUtils
                 c == Class
     }
 
+    /**
+     * Return the Class with the given name.  The short name for primitives can be used, as well as 'string',
+     * 'date', and 'class'.
+     */
+    static Class classForName(String name)
+    {
+        if (name == null || name.isEmpty())
+        {
+            throw new IllegalArgumentException("Class name cannot be null or empty.");
+        }
+        Class c = nameToClass[name]
+        return c == null ? loadClass(name) : c
+    }
+
+    // loadClass() provided by: Thomas Margreiter
+    private static Class loadClass(String name) throws ClassNotFoundException
+    {
+        String className = name
+        boolean arrayType = false
+        Class primitiveArray = null
+
+        while (className.startsWith("["))
+        {
+            arrayType = true
+            if (className.endsWith(";"))
+            {
+                className = className.substring(0, className.length() - 1)
+            }
+            switch (className)
+            {
+                case "[B":
+                    primitiveArray = ([] as byte[]).class
+                    break
+                case "[S":
+                    primitiveArray = ([] as short[]).class
+                    break
+                case "[I":
+                    primitiveArray = ([] as int[]).class
+                    break
+                case "[J":
+                    primitiveArray = ([] as long[]).class
+                    break
+                case "[F":
+                    primitiveArray = ([] as float[]).class
+                    break
+                case "[D":
+                    primitiveArray = ([] as double[]).class
+                    break
+                case "[Z":
+                    primitiveArray = ([] as boolean[]).class
+                    break
+                case "[C":
+                    primitiveArray = ([] as char[]).class
+                    break
+            }
+            int startpos = className.startsWith("[L") ? 2 : 1
+            className = className.substring(startpos)
+        }
+        Class currentClass = null
+        if (null == primitiveArray)
+        {
+            currentClass = Thread.currentThread().contextClassLoader.loadClass(className)
+        }
+
+        if (arrayType)
+        {
+            currentClass = (null != primitiveArray) ? primitiveArray : Array.newInstance(currentClass, 0).getClass()
+            while (name.startsWith("[["))
+            {
+                currentClass = Array.newInstance(currentClass, 0).getClass()
+                name = name.substring(1)
+            }
+        }
+        return currentClass
+    }
 }

@@ -109,19 +109,6 @@ class GroovyJsonReader implements Closeable
             '8':'8',
             '9':'9'
     ]
-    private static final Map<String, Class> nameToClass = [
-            'string':String.class,
-            'boolean':boolean.class,
-            'char':char.class,
-            'byte':byte.class,
-            'short':short.class,
-            'int':int.class,
-            'long':long.class,
-            'float':float.class,
-            'double':double.class,
-            'date':Date.class,
-            'class':Class.class
-    ]
     private static final Class[] emptyClassArray = [] as Class[]
     private static final Map<Class, JsonTypeReader> readers = [
             (String.class):new StringReader(),
@@ -358,7 +345,7 @@ class GroovyJsonReader implements Closeable
                 {
                     error("Calendar missing 'time' field")
                 }
-                Date date = GroovyJsonWriter._dateFormat.get().parse(time)
+                Date date = MetaUtils.dateFormat.get().parse(time)
                 Class c
                 if (jObj.target != null)
                 {
@@ -2220,7 +2207,7 @@ class GroovyJsonReader implements Closeable
                 {
                     mate = getEnum(c.superclass, jsonObj)
                 }
-                else if ("java.util.Arrays$ArrayList".equals(c.getName()))
+                else if ('java.util.Arrays$ArrayList'.equals(c.getName()))
                 {	// Special case: Arrays$ArrayList does not allow .add() to be called on it.
                     mate = new ArrayList()
                 }
@@ -3087,85 +3074,6 @@ class GroovyJsonReader implements Closeable
         return c >= 0x30 && c <= 0x39
     }
 
-    static Class classForName(String name) throws IOException
-    {
-        if (name == null || name.isEmpty())
-        {
-            error("Empty class name")
-        }
-        try
-        {
-            Class c = nameToClass[(name)]
-            return c == null ? loadClass(name) : c
-        }
-        catch (ClassNotFoundException e)
-        {
-            return (Class) error("Class instance '" + name + "' could not be created", e)
-        }
-    }
-
-    // loadClass() provided by: Thomas Margreiter
-    private static Class loadClass(String name) throws ClassNotFoundException
-    {
-        String className = name
-        boolean arrayType = false
-        Class primitiveArray = null
-
-        while (className.startsWith("["))
-        {
-            arrayType = true
-            if (className.endsWith(";"))
-            {
-                className = className.substring(0, className.length() - 1)
-            }
-            switch (className)
-            {
-                case "[B":
-                    primitiveArray = ([] as byte[]).class
-                    break
-                case "[S":
-                    primitiveArray = ([] as short[]).class
-                    break
-                case "[I":
-                    primitiveArray = ([] as int[]).class
-                    break
-                case "[J":
-                    primitiveArray = ([] as long[]).class
-                    break
-                case "[F":
-                    primitiveArray = ([] as float[]).class
-                    break
-                case "[D":
-                    primitiveArray = ([] as double[]).class
-                    break
-                case "[Z":
-                    primitiveArray = ([] as boolean[]).class
-                    break
-                case "[C":
-                    primitiveArray = ([] as char[]).class
-                    break
-            }
-            int startpos = className.startsWith("[L") ? 2 : 1
-            className = className.substring(startpos)
-        }
-        Class currentClass = null
-        if (null == primitiveArray)
-        {
-            currentClass = Thread.currentThread().contextClassLoader.loadClass(className)
-        }
-
-        if (arrayType)
-        {
-            currentClass = (null != primitiveArray) ? primitiveArray : Array.newInstance(currentClass, 0).getClass()
-            while (name.startsWith("[["))
-            {
-                currentClass = Array.newInstance(currentClass, 0).getClass()
-                name = name.substring(1)
-            }
-        }
-        return currentClass
-    }
-
     /**
      * Read until non-whitespace character and then return it.
      * This saves extra read/pushback.
@@ -3380,6 +3288,18 @@ class GroovyJsonReader implements Closeable
         return ""
     }
 
+    protected static Class classForName(String name)
+    {
+        try
+        {
+            MetaUtils.classForName(name);
+        }
+        catch (Exception e)
+        {
+            error("Unable to create class: " + name, e);
+        }
+    }
+
     /**
      * This is a performance optimization.  The lowest 128 characters are re-used.
      *
@@ -3409,7 +3329,7 @@ class GroovyJsonReader implements Closeable
         {
     		try
             {
-    			Constructor<Unsafe> unsafeConstructor = GroovyJsonReader.classForName("sun.misc.Unsafe").getDeclaredConstructor()
+    			Constructor<Unsafe> unsafeConstructor = classForName("sun.misc.Unsafe").getDeclaredConstructor()
     			unsafeConstructor.setAccessible(true)
                 sunUnsafe = unsafeConstructor.newInstance()
     			allocateInstance = sunUnsafe.getClass().getMethod("allocateInstance", Class.class)

@@ -94,12 +94,6 @@ class GroovyJsonWriter implements Closeable, Flushable
             return [:]
         }
     }
-    protected static final ThreadLocal<SimpleDateFormat> _dateFormat = new ThreadLocal<SimpleDateFormat>() {
-        public SimpleDateFormat initialValue()
-        {
-            return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-        }
-    }
 
     static
     {
@@ -453,9 +447,9 @@ class GroovyJsonWriter implements Closeable, Flushable
         public void write(Object obj, boolean showType, Writer output) throws IOException
         {
             Calendar cal = (Calendar) obj
-            _dateFormat.get().timeZone = cal.timeZone
+            MetaUtils.dateFormat.get().timeZone = cal.timeZone
             output.write('"time":"')
-            output.write(_dateFormat.get().format(cal.time))
+            output.write(MetaUtils.dateFormat.get().format(cal.time))
             output.write('","zone":"')
             output.write(cal.timeZone.ID)
             output.write('"')
@@ -1305,7 +1299,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
         else
         {
-            arrayClass = GroovyJsonReader.classForName(type)
+            arrayClass = MetaUtils.classForName(type)
         }
 
         final Writer output = this.out
@@ -1423,7 +1417,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
 
         String type = jObj.type
-        Class colClass = GroovyJsonReader.classForName(type)
+        Class colClass = MetaUtils.classForName(type)
         boolean referenced = objsReferenced.containsKey(jObj) && jObj.hasId()
         final Writer output = this.out
         int len = jObj.length
@@ -1510,7 +1504,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             String type = jObj.type
             if (type != null)
             {
-                Class mapClass = GroovyJsonReader.classForName(type)
+                Class mapClass = MetaUtils.classForName(type)
                 output.write('"@type":"')
                 output.write(mapClass.getName())
                 output.write('"')
@@ -1606,7 +1600,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             String type = jObj.type
             if (type != null)
             {
-                Class mapClass = GroovyJsonReader.classForName(type)
+                Class mapClass = MetaUtils.classForName(type)
                 output.write('"@type":"')
                 output.write(mapClass.getName())
                 output.write('"')
@@ -1663,7 +1657,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             output.write('"@type":"')
             output.write(jObj.type)
             output.write('"')
-            try  { type = GroovyJsonReader.classForName(jObj.type) }
+            try  { type = MetaUtils.classForName(jObj.type) }
             catch(Exception ignored) { type = null; }
         }
 
