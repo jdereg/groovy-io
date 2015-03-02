@@ -22,7 +22,7 @@ import groovy.transform.CompileStatic
 @CompileStatic
 interface JsonTypeWriter
 {
-    void write(Object o, boolean showType, Writer output) throws IOException;
-    boolean hasPrimitiveForm();
-    void writePrimitiveForm(Object o, Writer output) throws IOException;
+    void write(Object o, boolean showType, Writer output) throws IOException
+    boolean hasPrimitiveForm()
+    void writePrimitiveForm(Object o, Writer output) throws IOException
 }
