@@ -345,7 +345,7 @@ class MetaUtils
         return currentClass
     }
 
-    static Object newInstance(Class c, Closure errorHandler) throws IOException
+    static Object newInstanceImpl(Class c) throws IOException
     {
         if (unmodifiableSortedMap.getClass().isAssignableFrom(c))
         {
@@ -383,7 +383,7 @@ class MetaUtils
                 catch (Exception e)
                 {
                     // Should never happen, as the code that fetched the constructor was able to instantiate it once already
-                    errorHandler("Could not instantiate " + c.getName(), e)
+                    error("Could not instantiate " + c.getName(), e)
                 }
             }
 
@@ -397,21 +397,21 @@ class MetaUtils
                 }
                 catch (Exception e)
                 {   // Should never happen, as the code that fetched the constructor was able to instantiate it once already
-                    errorHandler("Could not instantiate " + c.getName(), e)
+                    error("Could not instantiate " + c.getName(), e)
                 }
             }
-            Object[] values = fillArgs(paramTypes, useNull, errorHandler)
+            Object[] values = fillArgs(paramTypes, useNull)
             try
             {
                 return constructor.newInstance(values)
             }
             catch (Exception e)
             {   // Should never happen, as the code that fetched the constructor was able to instantiate it once already
-                errorHandler("Could not instantiate " + c.getName(), e)
+                error("Could not instantiate " + c.getName(), e)
             }
         }
 
-        Object[] ret = newInstanceEx(c, errorHandler)
+        Object[] ret = newInstanceEx(c)
         constructors[(c)] = [ret[1], ret[2]] as Object[]
         return ret[0]
     }
@@ -419,7 +419,7 @@ class MetaUtils
     /**
      * Return constructor and instance as elements 0 and 1, respectively.
      */
-    private static Object[] newInstanceEx(Class c, Closure errorHandler) throws IOException
+    private static Object[] newInstanceEx(Class c) throws IOException
     {
         try
         {
@@ -428,23 +428,23 @@ class MetaUtils
             {
                 return [constructor.newInstance(), constructor, true] as Object[]
             }
-            return tryOtherConstruction(c, errorHandler)
+            return tryOtherConstruction(c)
         }
         catch (Exception e)
         {
             // OK, this class does not have a public no-arg constructor.  Instantiate with
             // first constructor found, filling in constructor values with null or
             // defaults for primitives.
-            return tryOtherConstruction(c, errorHandler)
+            return tryOtherConstruction(c)
         }
     }
 
-    private static Object[] tryOtherConstruction(Class c, Closure errorHandler) throws IOException
+    private static Object[] tryOtherConstruction(Class c) throws IOException
     {
         Constructor[] constructors = c.declaredConstructors
         if (constructors.length == 0)
         {
-            errorHandler("Cannot instantiate '" + c.getName() + "' - Primitive, interface, array[] or void")
+            error("Cannot instantiate '" + c.getName() + "' - Primitive, interface, array[] or void")
         }
 
         // Try each constructor (private, protected, or public) with null values for non-primitives.
@@ -452,7 +452,7 @@ class MetaUtils
         {
             constructor.accessible = true
             Class[] argTypes = constructor.parameterTypes
-            Object[] values = fillArgs(argTypes, true, errorHandler)
+            Object[] values = fillArgs(argTypes, true)
             try
             {
                 return [constructor.newInstance(values), constructor, true] as Object[]
@@ -466,7 +466,7 @@ class MetaUtils
         {
             constructor.accessible = true
             Class[] argTypes = constructor.parameterTypes
-            Object[] values = fillArgs(argTypes, false, errorHandler)
+            Object[] values = fillArgs(argTypes, false)
             try
             {
                 return [constructor.newInstance(values), constructor, false] as Object[]
@@ -488,11 +488,11 @@ class MetaUtils
             { }
         }
 
-        errorHandler("Could not instantiate " + c.getName() + " using any constructor")
+        error("Could not instantiate " + c.getName() + " using any constructor")
         return null
     }
 
-    protected static Object[] fillArgs(Class[] argTypes, boolean useNull, Closure errorHandler) throws IOException
+    protected static Object[] fillArgs(Class[] argTypes, boolean useNull) throws IOException
     {
         final Object[] values = new Object[argTypes.length]
         for (int i = 0; i < argTypes.length; i++)
@@ -500,7 +500,7 @@ class MetaUtils
             final Class argType = argTypes[i]
             if (isPrimitive(argType))
             {
-                values[i] = newPrimitiveWrapper(argType, null, errorHandler)
+                values[i] = newPrimitiveWrapper(argType, null)
             }
             else if (useNull)
             {
@@ -598,7 +598,7 @@ class MetaUtils
         return values
     }
 
-    protected static Object newPrimitiveWrapper(Class c, Object rhs, Closure errorHandler) throws IOException
+    protected static Object newPrimitiveWrapper(Class c, Object rhs) throws IOException
     {
         final String cname
         try
@@ -715,10 +715,10 @@ class MetaUtils
         catch (Exception e)
         {
             String className = c == null ? 'null' : c.getName();
-            return errorHandler("Error creating primitive wrapper instance for Class: " + className, e);
+            return error("Error creating primitive wrapper instance for Class: " + className, e);
         }
 
-        return errorHandler("Class '" + cname + "' requested for special instantiation - isPrimitive() does not match newPrimitiveWrapper()")
+        return error("Class '" + cname + "' requested for special instantiation - isPrimitive() does not match newPrimitiveWrapper()")
     }
 
     static String removeLeadingAndTrailingQuotes(String s)
@@ -747,6 +747,7 @@ class MetaUtils
      * Wrapper for unsafe, decouples direct usage of sun.misc.* package.
      * @author Kai Hufenback
      */
+    @CompileStatic
     static final class Unsafe
     {
         private final def sunUnsafe
@@ -789,5 +790,15 @@ class MetaUtils
                 throw new RuntimeException(e)
             }
         }
+    }
+
+    protected static Object error(String msg)
+    {
+        GroovyJsonReader.error(msg)
+    }
+
+    protected static Object error(String msg, Exception e)
+    {
+        GroovyJsonReader.error(msg, e)
     }
 }

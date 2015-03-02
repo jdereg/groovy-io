@@ -9,8 +9,6 @@ import java.lang.reflect.Type
 import java.lang.reflect.TypeVariable
 import java.sql.Timestamp
 import java.util.concurrent.ConcurrentHashMap
-import java.util.regex.Matcher
-import java.util.regex.Pattern
 
 import static java.util.Map.Entry
 
@@ -60,59 +58,21 @@ import static java.util.Map.Entry
 class GroovyJsonReader implements Closeable
 {
     private static final Map<Class, JsonTypeReader> readers = [
-            (String.class):new StringReader(),
-            (Date.class):new DateReader(),
-            (BigInteger.class):new BigIntegerReader(),
-            (BigDecimal.class):new BigDecimalReader(),
-            (java.sql.Date.class):new SqlDateReader(),
-            (Timestamp.class):new TimestampReader(),
-            (Calendar.class):new CalendarReader(),
-            (TimeZone.class):new TimeZoneReader(),
-            (Locale.class):new LocaleReader(),
-            (Class.class):new ClassReader(),
-            (StringBuilder.class):new StringBuilderReader(),
-            (StringBuffer.class):new StringBufferReader()
+            (String.class):new Readers.StringReader(),
+            (Date.class):new Readers.DateReader(),
+            (BigInteger.class):new Readers.BigIntegerReader(),
+            (BigDecimal.class):new Readers.BigDecimalReader(),
+            (java.sql.Date.class):new Readers.SqlDateReader(),
+            (Timestamp.class):new Readers.TimestampReader(),
+            (Calendar.class):new Readers.CalendarReader(),
+            (TimeZone.class):new Readers.TimeZoneReader(),
+            (Locale.class):new Readers.LocaleReader(),
+            (Class.class):new Readers.ClassReader(),
+            (StringBuilder.class):new Readers.StringBuilderReader(),
+            (StringBuffer.class):new Readers.StringBufferReader()
     ]
     private static final Set<Class> notCustom = new HashSet<>()
-    private static final Map<String, String> months = [
-            'jan':'1',
-            'january':'1',
-            'feb':'2',
-            'february':'2',
-            'mar':'3',
-            'march':'3',
-            'apr':'4',
-            'april':'4',
-            'may':'5',
-            'jun':'6',
-            'june':'6',
-            'jul':'7',
-            'july':'7',
-            'aug':'8',
-            'august':'8',
-            'sep':'9',
-            'sept':'9',
-            'september':'9',
-            'oct':'10',
-            'october':'10',
-            'nov':'11',
-            'november':'11',
-            'dec':'12',
-            'december':'12'
-    ]
     private static final Map<Class, ClassFactory> factory = [:]
-    private static final String days = '(monday|mon|tuesday|tues|tue|wednesday|wed|thursday|thur|thu|friday|fri|saturday|sat|sunday|sun)' // longer before shorter matters
-    private static final String mos = '(January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)'
-    private static final Pattern datePattern1 = Pattern.compile('(\\d{4})[./-](\\d{1,2})[./-](\\d{1,2})')
-    private static final Pattern datePattern2 = Pattern.compile('(\\d{1,2})[./-](\\d{1,2})[./-](\\d{4})')
-    private static final Pattern datePattern3 = Pattern.compile(mos + '[ ]*[,]?[ ]*(\\d{1,2})(st|nd|rd|th|)[ ]*[,]?[ ]*(\\d{4})', Pattern.CASE_INSENSITIVE)
-    private static final Pattern datePattern4 = Pattern.compile('(\\d{1,2})(st|nd|rd|th|)[ ]*[,]?[ ]*' + mos + '[ ]*[,]?[ ]*(\\d{4})', Pattern.CASE_INSENSITIVE)
-    private static final Pattern datePattern5 = Pattern.compile('(\\d{4})[ ]*[,]?[ ]*' + mos + '[ ]*[,]?[ ]*(\\d{1,2})(st|nd|rd|th|)', Pattern.CASE_INSENSITIVE)
-    private static final Pattern datePattern6 = Pattern.compile(days+ '[ ]+' + mos + '[ ]+(\\d{1,2})[ ]+(\\d{2}:\\d{2}:\\d{2})[ ]+[A-Z]{1,3}\\s+(\\d{4})', Pattern.CASE_INSENSITIVE)
-    private static final Pattern timePattern1 = Pattern.compile('(\\d{2})[.:](\\d{2})[.:](\\d{2})[.](\\d{1,10})([+-]\\d{2}[:]?\\d{2}|Z)?')
-    private static final Pattern timePattern2 = Pattern.compile('(\\d{2})[.:](\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?')
-    private static final Pattern timePattern3 = Pattern.compile('(\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?')
-    private static final Pattern dayPattern = Pattern.compile(days, Pattern.CASE_INSENSITIVE)
     private static final Map<Class, JsonTypeReader> readerCache = new ConcurrentHashMap<>()
     private static final NullClass nullReader = new NullClass()
     private final Map<Long, JsonObject> _objsRead = [:]
@@ -164,6 +124,7 @@ class GroovyJsonReader implements Closeable
     /**
      * Use to create new instances of collection interfaces (needed for empty collections)
      */
+    @CompileStatic
     public static class CollectionFactory implements ClassFactory
     {
         public Object newInstance(Class c)
@@ -191,6 +152,7 @@ class GroovyJsonReader implements Closeable
     /**
      * Use to create new instances of Map interfaces (needed for empty Maps)
      */
+    @CompileStatic
     public static class MapFactory implements ClassFactory
     {
         public Object newInstance(Class c)
@@ -204,641 +166,6 @@ class GroovyJsonReader implements Closeable
                 return [:]
             }
             throw new RuntimeException("MapFactory handed Class for which it was not expecting: " + c.getName())
-        }
-    }
-
-    public static class TimeZoneReader implements JsonTypeReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            JsonObject jObj = (JsonObject)o
-            Object zone = jObj.zone
-            if (zone == null)
-            {
-                error("java.util.TimeZone must specify 'zone' field")
-            }
-            return jObj.target = TimeZone.getTimeZone((String) zone)
-        }
-    }
-
-    public static class LocaleReader implements JsonTypeReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            JsonObject jObj = (JsonObject) o
-            Object language = jObj.language
-            if (language == null)
-            {
-                error("java.util.Locale must specify 'language' field")
-            }
-            Object country = jObj.country
-            Object variant = jObj.variant
-            if (country == null)
-            {
-                return jObj.target = new Locale((String) language)
-            }
-            if (variant == null)
-            {
-                return jObj.target = new Locale((String) language, (String) country)
-            }
-
-            return jObj.target = new Locale((String) language, (String) country, (String) variant)
-        }
-    }
-
-    public static class CalendarReader implements JsonTypeReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            String time = null
-            try
-            {
-                JsonObject jObj = (JsonObject) o
-                time = (String) jObj.time
-                if (time == null)
-                {
-                    error("Calendar missing 'time' field")
-                }
-                Date date = MetaUtils.dateFormat.get().parse(time)
-                Class c
-                if (jObj.target != null)
-                {
-                    c = jObj.getTargetClass()
-                }
-                else
-                {
-                    Object type = jObj.type
-                    c = classForName((String) type)
-                }
-
-                Calendar calendar = (Calendar) newInstance(c)
-                calendar.time = date
-                jObj.target = calendar
-                String zone = (String) jObj.zone
-                if (zone != null)
-                {
-                    calendar.timeZone = TimeZone.getTimeZone(zone)
-                }
-                return calendar
-            }
-            catch(Exception e)
-            {
-                return error("Failed to parse calendar, time: " + time)
-            }
-        }
-    }
-
-    public static class DateReader implements JsonTypeReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            if (o instanceof Long)
-            {
-                return new Date((Long) o)
-            }
-            else if (o instanceof String)
-            {
-                return parseDate((String) o)
-            }
-            else if (o instanceof JsonObject)
-            {
-                JsonObject jObj = (JsonObject) o
-                Object val = jObj.value
-                if (val instanceof Long)
-                {
-                    return new Date((Long) val)
-                }
-                else if (val instanceof String)
-                {
-                    return parseDate((String) val)
-                }
-                return error("Unable to parse date: " + o)
-            }
-            else
-            {
-                return error("Unable to parse date, encountered unknown object: " + o)
-            }
-        }
-
-        private static Date parseDate(String dateStr) throws IOException
-        {
-            if (dateStr == null)
-            {
-                return null
-            }
-            dateStr = dateStr.trim()
-            if (dateStr.isEmpty())
-            {
-                return null
-            }
-
-            // Determine which date pattern (Matcher) to use
-            Matcher matcher = datePattern1.matcher(dateStr)
-
-            String year, month = null, day, mon = null, remains
-
-            if (matcher.find())
-            {
-                year = matcher.group(1)
-                month = matcher.group(2)
-                day = matcher.group(3)
-                remains = matcher.replaceFirst("")
-            }
-            else
-            {
-                matcher = datePattern2.matcher(dateStr)
-                if (matcher.find())
-                {
-                    month = matcher.group(1)
-                    day = matcher.group(2)
-                    year = matcher.group(3)
-                    remains = matcher.replaceFirst("")
-                }
-                else
-                {
-                    matcher = datePattern3.matcher(dateStr)
-                    if (matcher.find())
-                    {
-                        mon = matcher.group(1)
-                        day = matcher.group(2)
-                        year = matcher.group(4)
-                        remains = matcher.replaceFirst("")
-                    }
-                    else
-                    {
-                        matcher = datePattern4.matcher(dateStr)
-                        if (matcher.find())
-                        {
-                            day = matcher.group(1)
-                            mon = matcher.group(3)
-                            year = matcher.group(4)
-                            remains = matcher.replaceFirst("")
-                        }
-                        else
-                        {
-                            matcher = datePattern5.matcher(dateStr)
-                            if (matcher.find())
-                            {
-                                year = matcher.group(1)
-                                mon = matcher.group(2)
-                                day = matcher.group(3)
-                                remains = matcher.replaceFirst("")
-                            }
-                            else
-                            {
-                                matcher = datePattern6.matcher(dateStr)
-                                if (!matcher.find())
-                                {
-                                    error("Unable to parse: " + dateStr)
-                                }
-                                year = matcher.group(5)
-                                mon = matcher.group(2)
-                                day = matcher.group(3)
-                                remains = matcher.group(4)
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (mon != null)
-            {   // Month will always be in Map, because regex forces this.
-                month = months[mon.trim().toLowerCase()]
-            }
-
-            // Determine which date pattern (Matcher) to use
-            String hour = null, min = null, sec = "00", milli = "0", tz = null
-            remains = remains.trim()
-            matcher = timePattern1.matcher(remains)
-            if (matcher.find())
-            {
-                hour = matcher.group(1)
-                min = matcher.group(2)
-                sec = matcher.group(3)
-                milli = matcher.group(4)
-                if (matcher.groupCount() > 4)
-                {
-                    tz = matcher.group(5)
-                }
-            }
-            else
-            {
-                matcher = timePattern2.matcher(remains)
-                if (matcher.find())
-                {
-                    hour = matcher.group(1)
-                    min = matcher.group(2)
-                    sec = matcher.group(3)
-                    if (matcher.groupCount() > 3)
-                    {
-                        tz = matcher.group(4)
-                    }
-                }
-                else
-                {
-                    matcher = timePattern3.matcher(remains)
-                    if (matcher.find())
-                    {
-                        hour = matcher.group(1)
-                        min = matcher.group(2)
-                        if (matcher.groupCount() > 2)
-                        {
-                            tz = matcher.group(3)
-                        }
-                    }
-                    else
-                    {
-                        matcher = null
-                    }
-                }
-            }
-
-            if (matcher != null)
-            {
-                remains = matcher.replaceFirst("")
-            }
-
-            // Clear out day of week (mon, tue, wed, ...)
-            if (remains != null && remains.length() > 0)
-            {
-                Matcher dayMatcher = dayPattern.matcher(remains)
-                if (dayMatcher.find())
-                {
-                    remains = dayMatcher.replaceFirst("").trim()
-                }
-            }
-            if (remains != null && remains.length() > 0)
-            {
-                remains = remains.trim()
-                if (!remains.equals(",") && (!remains.equals("T")))
-                {
-                    error("Issue parsing data/time, other characters present: " + remains)
-                }
-            }
-
-            Calendar c = Calendar.instance
-            c.clear()
-            if (tz != null)
-            {
-                if ("z".equalsIgnoreCase(tz))
-                {
-                    c.timeZone = TimeZone.getTimeZone("GMT")
-                }
-                else
-                {
-                    c.timeZone = TimeZone.getTimeZone("GMT" + tz)
-                }
-            }
-
-            // Regex prevents these from ever failing to parse
-            int y = Integer.parseInt(year)
-            int m = Integer.parseInt(month) - 1    // months are 0-based
-            int d = Integer.parseInt(day)
-
-            if (m < 0 || m > 11)
-            {
-                error("Month must be between 1 and 12 inclusive, date: " + dateStr)
-            }
-            if (d < 1 || d > 31)
-            {
-                error("Day must be between 1 and 31 inclusive, date: " + dateStr)
-            }
-
-            if (matcher == null)
-            {   // no [valid] time portion
-                c.set(y, m, d)
-            }
-            else
-            {
-                // Regex prevents these from ever failing to parse.
-                int h = Integer.parseInt(hour)
-                int mn = Integer.parseInt(min)
-                int s = Integer.parseInt(sec)
-                int ms = Integer.parseInt(milli)
-
-                if (h > 23)
-                {
-                    error("Hour must be between 0 and 23 inclusive, time: " + dateStr)
-                }
-                if (mn > 59)
-                {
-                    error("Minute must be between 0 and 59 inclusive, time: " + dateStr)
-                }
-                if (s > 59)
-                {
-                    error("Second must be between 0 and 59 inclusive, time: " + dateStr)
-                }
-
-                // regex enforces millis to number
-                c.set(y, m, d, h, mn, s)
-                c.set(Calendar.MILLISECOND, ms)
-            }
-            return c.time
-        }
-    }
-
-    public static class SqlDateReader extends DateReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            return new java.sql.Date(((Date) super.read(o, stack)).time)
-        }
-    }
-
-    public static class StringReader implements JsonTypeReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            if (o instanceof String)
-            {
-                return o
-            }
-
-            if (MetaUtils.isPrimitive(o.getClass()))
-            {
-                return o.toString()
-            }
-
-            JsonObject jObj = (JsonObject) o
-            if (jObj.containsKey('value'))
-            {
-                return jObj.target = jObj.value
-            }
-            return error("String missing 'value' field")
-        }
-    }
-
-    public static class ClassReader implements JsonTypeReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            if (o instanceof String)
-            {
-                return classForName((String)o)
-            }
-
-            JsonObject jObj = (JsonObject) o
-            if (jObj.containsKey("value"))
-            {
-                return jObj.target = classForName((String) jObj.value)
-            }
-            return error("Class missing 'value' field")
-        }
-    }
-
-    public static class BigIntegerReader implements JsonTypeReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            JsonObject jObj = null
-            Object value = o
-            if (o instanceof JsonObject)
-            {
-                jObj = (JsonObject) o
-                if (jObj.containsKey('value'))
-                {
-                    value = jObj.value
-                }
-                else
-                {
-                    return error("BigInteger missing 'value' field")
-                }
-            }
-
-            if (value instanceof JsonObject)
-            {
-                JsonObject valueObj = (JsonObject)value
-                if ("java.math.BigDecimal".equals(valueObj.type))
-                {
-                    BigDecimalReader reader = new BigDecimalReader()
-                    value = reader.read(value, stack)
-                }
-                else if ("java.math.BigInteger".equals(valueObj.type))
-                {
-                    value = read(value, stack)
-                }
-                else
-                {
-                    return bigIntegerFrom(valueObj['value'])
-                }
-            }
-
-            BigInteger x = bigIntegerFrom(value)
-            if (jObj != null)
-            {
-                jObj.target = x
-            }
-
-            return x
-        }
-    }
-
-    /**
-     * @return a BigInteger from the given input.  A best attempt will be made to support
-     * as many input types as possible.  For example, if the input is a Boolean, a BigInteger of
-     * 1 or 0 will be returned.  If the input is a String "", a null will be returned.  If the
-     * input is a Double, Float, or BigDecimal, a BigInteger will be returned that retains the
-     * integer portion (fractional part is dropped).  The input can be a Byte, Short, Integer,
-     * or Long.
-     * @throws java.io.IOException if the input is something that cannot be converted to a BigInteger.
-     */
-    public static BigInteger bigIntegerFrom(Object value) throws IOException
-    {
-        if (value == null)
-        {
-            return null
-        }
-        else if (value instanceof BigInteger)
-        {
-            return (BigInteger) value
-        }
-        else if (value instanceof String)
-        {
-            String s = (String) value
-            if ("".equals(s.trim()))
-            {   // Allows "" to be used to assign null to BigInteger field.
-                return null
-            }
-            try
-            {
-                return new BigInteger(MetaUtils.removeLeadingAndTrailingQuotes(s))
-            }
-            catch (Exception e)
-            {
-                return (BigInteger) error("Could not parse '" + value + "' as BigInteger.", e)
-            }
-        }
-        else if (value instanceof BigDecimal)
-        {
-            BigDecimal bd = (BigDecimal) value
-            return bd.toBigInteger()
-        }
-        else if (value instanceof Boolean)
-        {
-            return ((Boolean) value) ? BigInteger.ONE : BigInteger.ZERO
-        }
-        else if (value instanceof Double || value instanceof Float)
-        {
-            return new BigDecimal(((Number)value).doubleValue()).toBigInteger()
-        }
-        else if (value instanceof Long || value instanceof Integer ||
-                value instanceof Short || value instanceof Byte)
-        {
-            return new BigInteger(value.toString())
-        }
-        return (BigInteger) error("Could not convert value: " + value.toString() + " to BigInteger.")
-    }
-
-    public static class BigDecimalReader implements JsonTypeReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            JsonObject jObj = null
-            Object value = o
-            if (o instanceof JsonObject)
-            {
-                jObj = (JsonObject) o
-                if (jObj.containsKey('value'))
-                {
-                    value = jObj.value
-                }
-                else
-                {
-                    return error("BigDecimal missing 'value' field")
-                }
-            }
-
-            if (value instanceof JsonObject)
-            {
-                JsonObject valueObj = (JsonObject)value
-                if ("java.math.BigInteger".equals(valueObj.type))
-                {
-                    BigIntegerReader reader = new BigIntegerReader()
-                    value = reader.read(value, stack)
-                }
-                else if ("java.math.BigDecimal".equals(valueObj.type))
-                {
-                    value = read(value, stack)
-                }
-                else
-                {
-                    return bigDecimalFrom(valueObj['value'])
-                }
-            }
-
-            BigDecimal x = bigDecimalFrom(value)
-            if (jObj != null)
-            {
-                jObj.target = x
-            }
-            return x
-        }
-    }
-
-    /**
-     * @return a BigDecimal from the given input.  A best attempt will be made to support
-     * as many input types as possible.  For example, if the input is a Boolean, a BigDecimal of
-     * 1 or 0 will be returned.  If the input is a String "", a null will be returned. The input
-     * can be a Byte, Short, Integer, Long, or BigInteger.
-     * @throws java.io.IOException if the input is something that cannot be converted to a BigDecimal.
-     */
-    public static BigDecimal bigDecimalFrom(Object value) throws IOException
-    {
-        if (value == null)
-        {
-            return null
-        }
-        else if (value instanceof BigDecimal)
-        {
-            return (BigDecimal) value
-        }
-        else if (value instanceof String)
-        {
-            String s = (String) value
-            if ("".equals(s.trim()))
-            {
-                return null
-            }
-            try
-            {
-                return new BigDecimal(MetaUtils.removeLeadingAndTrailingQuotes(s))
-            }
-            catch (Exception e)
-            {
-                return (BigDecimal) error("Could not parse '" + s + "' as BigDecimal.", e)
-            }
-        }
-        else if (value instanceof BigInteger)
-        {
-            return new BigDecimal((BigInteger) value)
-        }
-        else if (value instanceof Boolean)
-        {
-            return ((Boolean) value) ? BigDecimal.ONE : BigDecimal.ZERO
-        }
-        else if (value instanceof Long || value instanceof Integer || value instanceof Double ||
-                value instanceof Short || value instanceof Byte || value instanceof Float)
-        {
-            return new BigDecimal(value.toString())
-        }
-        return (BigDecimal) error("Could not convert value: " + value.toString() + " to BigInteger.")
-    }
-
-    public static class StringBuilderReader implements JsonTypeReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            if (o instanceof String)
-            {
-                return new StringBuilder((String) o)
-            }
-
-            JsonObject jObj = (JsonObject) o
-            if (jObj.containsKey('value'))
-            {
-                return jObj.target = new StringBuilder((String) jObj.value)
-            }
-            return error("StringBuilder missing 'value' field")
-        }
-    }
-
-    public static class StringBufferReader implements JsonTypeReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            if (o instanceof String)
-            {
-                return new StringBuffer((String) o)
-            }
-
-            JsonObject jObj = (JsonObject) o
-            if (jObj.containsKey('value'))
-            {
-                return jObj.target = new StringBuffer((String) jObj.value)
-            }
-            return error("StringBuffer missing 'value' field")
-        }
-    }
-
-    public static class TimestampReader implements JsonTypeReader
-    {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
-        {
-            JsonObject jObj = (JsonObject) o
-            Object time = jObj.time
-            if (time == null)
-            {
-                error("java.sql.Timestamp must specify 'time' field")
-            }
-            Object nanos = jObj.nanos
-            if (nanos == null)
-            {
-                return jObj.target = new Timestamp(Long.valueOf((String) time))
-            }
-
-            Timestamp tstamp = new Timestamp(Long.valueOf((String) time))
-            tstamp.nanos = Integer.valueOf((String) nanos)
-            return jObj.target = tstamp
         }
     }
 
@@ -951,6 +278,7 @@ class GroovyJsonReader implements Closeable
         return closestReader.read(o, stack)
     }
 
+    @CompileStatic
     static class NullClass implements JsonTypeReader
     {
         Object read(Object jOb, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -1003,6 +331,7 @@ class GroovyJsonReader implements Closeable
      * could not yet be loaded, as the @ref appears ahead of the referenced object's
      * definition.  This can point to a field reference or an array/Collection element reference.
      */
+    @CompileStatic
     private static final class UnresolvedReference
     {
         private final JsonObject referencingObj
@@ -1297,7 +626,7 @@ class GroovyJsonReader implements Closeable
             }
             else if (isPrimitive)
             {   // Primitive component type array
-                Array.set(array, i, MetaUtils.newPrimitiveWrapper(compType, element, errorHandler))
+                Array.set(array, i, MetaUtils.newPrimitiveWrapper(compType, element))
             }
             else if (element.getClass().isArray())
             {   // Array of arrays
@@ -1614,7 +943,7 @@ class GroovyJsonReader implements Closeable
                 final JsonObject<String, Object> jObj = (JsonObject) rhs
                 if (field != null && JsonObject.isPrimitiveWrapper(field.type))
                 {
-                    jObj['value'] = MetaUtils.newPrimitiveWrapper(field.type, jObj['value'], errorHandler)
+                    jObj['value'] = MetaUtils.newPrimitiveWrapper(field.type, jObj['value'])
                     continue
                 }
                 final Long ref = (Long) jObj['@ref']
@@ -1639,15 +968,15 @@ class GroovyJsonReader implements Closeable
                 final Class fieldType = field.type
                 if (MetaUtils.isPrimitive(fieldType))
                 {
-                    jsonObj[fieldName] = MetaUtils.newPrimitiveWrapper(fieldType, rhs, errorHandler)
+                    jsonObj[fieldName] = MetaUtils.newPrimitiveWrapper(fieldType, rhs)
                 }
                 else if (BigDecimal.class == fieldType)
                 {
-                    jsonObj[fieldName] = bigDecimalFrom(rhs)
+                    jsonObj[fieldName] = Readers.bigDecimalFrom(rhs)
                 }
                 else if (BigInteger.class == fieldType)
                 {
-                    jsonObj[fieldName] = bigIntegerFrom(rhs)
+                    jsonObj[fieldName] = Readers.bigIntegerFrom(rhs)
                 }
                 else if (rhs instanceof String)
                 {
@@ -1720,7 +1049,7 @@ class GroovyJsonReader implements Closeable
             {
                 if (fieldType.isPrimitive())
                 {
-                    field.set(target, MetaUtils.newPrimitiveWrapper(fieldType, "0", errorHandler))
+                    field.set(target, MetaUtils.newPrimitiveWrapper(fieldType, "0"))
                 }
                 else
                 {
@@ -1816,7 +1145,7 @@ class GroovyJsonReader implements Closeable
             {
                 if (MetaUtils.isPrimitive(fieldType))
                 {
-                    field.set(target, MetaUtils.newPrimitiveWrapper(fieldType, rhs, errorHandler))
+                    field.set(target, MetaUtils.newPrimitiveWrapper(fieldType, rhs))
                 }
                 else if (rhs instanceof String && "".equals(((String) rhs).trim()) && fieldType != String.class)
                 {   // Allow "" to null out a non-String field
@@ -2105,7 +1434,7 @@ class GroovyJsonReader implements Closeable
             {    // Handle regular field.object reference
                 if (MetaUtils.isPrimitive(c))
                 {
-                    mate = MetaUtils.newPrimitiveWrapper(c, jsonObj['value'], errorHandler)
+                    mate = MetaUtils.newPrimitiveWrapper(c, jsonObj['value'])
                 }
                 else if (c == Class.class)
                 {
@@ -2353,7 +1682,7 @@ class GroovyJsonReader implements Closeable
         {
             return factory.get(c).newInstance(c);
         }
-        return MetaUtils.newInstance(c, errorHandler);
+        return MetaUtils.newInstanceImpl(c);
     }
 
     private static String getErrorMessage(String msg)
