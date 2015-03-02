@@ -275,12 +275,19 @@ class MetaUtils
      */
     static Class classForName(String name)
     {
-        if (name == null || name.isEmpty())
+        try
         {
-            throw new IllegalArgumentException("Class name cannot be null or empty.");
+            if (name == null || name.isEmpty())
+            {
+                throw new IllegalArgumentException("Class name cannot be null or empty.");
+            }
+            Class c = nameToClass[name]
+            return c == null ? loadClass(name) : c
         }
-        Class c = nameToClass[name]
-        return c == null ? loadClass(name) : c
+        catch (Exception e)
+        {
+            error("Unable to create class: " + name, e);
+        }
     }
 
     // loadClass() provided by: Thomas Margreiter

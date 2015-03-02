@@ -133,7 +133,7 @@ class Readers
                 else
                 {
                     Object type = jObj.type
-                    c = classForName((String) type)
+                    c = MetaUtils.classForName((String) type)
                 }
 
                 Calendar calendar = (Calendar) newInstance(c)
@@ -443,13 +443,13 @@ class Readers
         {
             if (o instanceof String)
             {
-                return classForName((String)o)
+                return MetaUtils.classForName((String)o)
             }
 
             JsonObject jObj = (JsonObject) o
             if (jObj.containsKey("value"))
             {
-                return jObj.target = classForName((String) jObj.value)
+                return jObj.target = MetaUtils.classForName((String) jObj.value)
             }
             return error("Class missing 'value' field")
         }
@@ -730,10 +730,5 @@ class Readers
     protected static Object newInstance(Class c)
     {
         return GroovyJsonReader.newInstance(c)
-    }
-
-    protected static Class classForName(String name)
-    {
-        return GroovyJsonReader.classForName(name)
     }
 }

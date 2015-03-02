@@ -234,7 +234,7 @@ class GroovyJsonReader implements Closeable
                     if (type != null)
                     {
                         typeStr = (String) type
-                        c = classForName((String) type)
+                        c = MetaUtils.classForName((String) type)
                     }
                     else
                     {
@@ -1401,7 +1401,7 @@ class GroovyJsonReader implements Closeable
             Class c
             try
             {
-                c = classForName(type)
+                c = MetaUtils.classForName(type)
             }
             catch (IOException e)
             {
@@ -1438,7 +1438,7 @@ class GroovyJsonReader implements Closeable
                 }
                 else if (c == Class.class)
                 {
-                    mate = classForName((String) jsonObj['value'])
+                    mate = MetaUtils.classForName((String) jsonObj['value'])
                 }
                 else if (c.isEnum())
                 {
@@ -1711,17 +1711,5 @@ class GroovyJsonReader implements Closeable
             return threadInput.get().getLastSnippet()
         }
         return ""
-    }
-
-    protected static Class classForName(String name)
-    {
-        try
-        {
-            return MetaUtils.classForName(name);
-        }
-        catch (Exception e)
-        {
-            error("Unable to create class: " + name, e);
-        }
     }
 }
