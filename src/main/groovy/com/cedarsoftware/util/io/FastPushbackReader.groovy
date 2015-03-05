@@ -23,7 +23,7 @@ class FastPushbackReader extends FilterReader
         super(reader)
         if (size <= 0)
         {
-            throw new IllegalArgumentException("size <= 0")
+            throw new IllegalArgumentException("size must be greater than 0")
         }
         buf = new int[size]
         idx = size
@@ -73,22 +73,19 @@ class FastPushbackReader extends FilterReader
     int read() throws IOException
     {
         final int ch = idx < buf.length ? buf[idx++] : super.read()
-        if (ch >= 0)
+        if (ch == 0x0a)
         {
-            if (ch == 0x0a)
-            {
-                line++
-                col = 0
-            }
-            else
-            {
-                col++
-            }
-            snippet[snippetLoc++] = ch
-            if (snippetLoc >= SNIPPET_LENGTH)
-            {
-                snippetLoc = 0
-            }
+            line++
+            col = 0
+        }
+        else
+        {
+            col++
+        }
+        snippet[snippetLoc++] = ch
+        if (snippetLoc >= SNIPPET_LENGTH)
+        {
+            snippetLoc = 0
         }
         return ch
     }
