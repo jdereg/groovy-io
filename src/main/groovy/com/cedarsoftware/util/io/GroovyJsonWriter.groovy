@@ -6,8 +6,6 @@ import java.lang.reflect.Array
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.sql.Timestamp
-import java.text.Format
-import java.text.SimpleDateFormat
 import java.util.Map.Entry
 import java.util.concurrent.ConcurrentHashMap
 
@@ -63,18 +61,18 @@ class GroovyJsonWriter implements Closeable, Flushable
     static final String FIELD_SPECIFIERS = "FIELD_SPECIFIERS"   // Set value to a Map<Class, List<String>> which will be used to control which fields on a class are output
     static final String ENUM_PUBLIC_ONLY = "ENUM_PUBLIC_ONLY" // If set, indicates that private variables of ENUMs are not to be serialized
     private static final Map<Class, JsonTypeWriter> writers = [
-            (String.class):new JsonStringWriter(),
-            (Date.class):new DateWriter(),
-            (BigInteger.class):new BigIntegerWriter(),
-            (BigDecimal.class):new BigDecimalWriter(),
-            (java.sql.Date.class):new DateWriter(),
-            (Timestamp.class):new TimestampWriter(),
-            (Calendar.class):new CalendarWriter(),
-            (TimeZone.class):new TimeZoneWriter(),
-            (Locale.class):new LocaleWriter(),
-            (Class.class):new ClassWriter(),
-            (StringBuilder.class):new StringBuilderWriter(),
-            (StringBuffer.class):new StringBufferWriter()
+            (String.class):new Writers.JsonStringWriter(),
+            (Date.class):new Writers.DateWriter(),
+            (BigInteger.class):new Writers.BigIntegerWriter(),
+            (BigDecimal.class):new Writers.BigDecimalWriter(),
+            (java.sql.Date.class):new Writers.DateWriter(),
+            (Timestamp.class):new Writers.TimestampWriter(),
+            (Calendar.class):new Writers.CalendarWriter(),
+            (TimeZone.class):new Writers.TimeZoneWriter(),
+            (Locale.class):new Writers.LocaleWriter(),
+            (Class.class):new Writers.ClassWriter(),
+            (StringBuilder.class):new Writers.StringBuilderWriter(),
+            (StringBuffer.class):new Writers.StringBufferWriter()
     ]
     private static final Set<Class> notCustom = [] as Set
     private static final Object[] byteStrings = new Object[256]
@@ -330,7 +328,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
         boolean referenced = objsReferenced.containsKey(o)
 
-        if ((!referenced && !showType && closestWriter.hasPrimitiveForm()) || closestWriter instanceof JsonStringWriter)
+        if ((!referenced && !showType && closestWriter.hasPrimitiveForm()) || closestWriter instanceof Writers.JsonStringWriter)
         {
             closestWriter.writePrimitiveForm(o, output)
             return true
@@ -365,7 +363,6 @@ class GroovyJsonWriter implements Closeable, Flushable
         return true
     }
 
-    @CompileStatic
     static class NullClass implements JsonTypeWriter
     {
         void write(Object o, boolean showType, Writer output) throws IOException { }
@@ -430,233 +427,6 @@ class GroovyJsonWriter implements Closeable, Flushable
     static void addNotCustomWriter(Class c)
     {
         writerCache[c] = nullWriter
-    }
-
-    @CompileStatic
-    static class TimeZoneWriter implements JsonTypeWriter {
-        void write(Object obj, boolean showType, Writer output) throws IOException
-        {
-            TimeZone cal = (TimeZone) obj
-            output.write('"zone":"')
-            output.write(cal.ID)
-            output.write('"')
-        }
-
-        boolean hasPrimitiveForm() { return false }
-        void writePrimitiveForm(Object o, Writer output) throws IOException {}
-    }
-
-    @CompileStatic
-    static class CalendarWriter implements JsonTypeWriter {
-        void write(Object obj, boolean showType, Writer output) throws IOException
-        {
-            Calendar cal = (Calendar) obj
-            MetaUtils.dateFormat.get().timeZone = cal.timeZone
-            output.write('"time":"')
-            output.write(MetaUtils.dateFormat.get().format(cal.time))
-            output.write('","zone":"')
-            output.write(cal.timeZone.ID)
-            output.write('"')
-        }
-
-        boolean hasPrimitiveForm() { return false }
-        void writePrimitiveForm(Object o, Writer output) throws IOException {}
-    }
-
-    @CompileStatic
-    static class DateWriter implements JsonTypeWriter {
-        void write(Object obj, boolean showType, Writer output) throws IOException
-        {
-            Date date = (Date)obj
-            Object dateFormat = _args.get()[DATE_FORMAT]
-            if (dateFormat instanceof String)
-            {   // Passed in as String, turn into a SimpleDateFormat instance to be used throughout this stream write.
-                dateFormat = new SimpleDateFormat((String) dateFormat, Locale.ENGLISH)
-                _args.get()[DATE_FORMAT] = dateFormat
-            }
-            if (showType)
-            {
-                output.write('"value":')
-            }
-
-            if (dateFormat instanceof Format)
-            {
-                output.write('"')
-                output.write(((Format) dateFormat).format(date))
-                output.write('"')
-            }
-            else
-            {
-                output.write(Long.toString(((Date) obj).time))
-            }
-        }
-
-        boolean hasPrimitiveForm() { return true }
-
-        void writePrimitiveForm(Object o, Writer output) throws IOException
-        {
-            if (_args.get().containsKey(DATE_FORMAT))
-            {
-                write(o, false, output)
-            }
-            else
-            {
-                output.write(Long.toString(((Date) o).time))
-            }
-        }
-    }
-
-    @CompileStatic
-    static class TimestampWriter implements JsonTypeWriter {
-        void write(Object o, boolean showType, Writer output) throws IOException
-        {
-            Timestamp tstamp = (Timestamp) o
-            output.write('"time":"')
-            long x = (long) tstamp.time / 1000L
-            output.write(Long.toString(x * 1000L))
-            output.write('","nanos":"')
-            output.write(Integer.toString(tstamp.nanos))
-            output.write('"')
-        }
-
-        boolean hasPrimitiveForm() { return false }
-
-        void writePrimitiveForm(Object o, Writer output) throws IOException { }
-    }
-
-    @CompileStatic
-    static class ClassWriter implements JsonTypeWriter {
-        void write(Object obj, boolean showType, Writer output) throws IOException
-        {
-            String value = ((Class) obj).name
-            output.write('"value":')
-            writeJsonUtf8String(value, output)
-        }
-
-        boolean hasPrimitiveForm() { return true }
-
-        void writePrimitiveForm(Object o, Writer output) throws IOException
-        {
-            writeJsonUtf8String(((Class) o).name, output)
-        }
-    }
-
-    @CompileStatic
-    static class JsonStringWriter implements JsonTypeWriter {
-        void write(Object obj, boolean showType, Writer output) throws IOException
-        {
-            output.write('"value":')
-            writeJsonUtf8String((String) obj, output)
-        }
-
-        boolean hasPrimitiveForm() { return true }
-
-        void writePrimitiveForm(Object o, Writer output) throws IOException
-        {
-            writeJsonUtf8String((String) o, output)
-        }
-    }
-
-    @CompileStatic
-    static class LocaleWriter implements JsonTypeWriter {
-        void write(Object obj, boolean showType, Writer output) throws IOException
-        {
-            Locale locale = (Locale) obj
-
-            output.write('"language":"')
-            output.write(locale.language)
-            output.write('","country":"')
-            output.write(locale.country)
-            output.write('","variant":"')
-            output.write(locale.variant)
-            output.write('"')
-        }
-        boolean hasPrimitiveForm() { return false }
-        void writePrimitiveForm(Object o, Writer output) throws IOException { }
-    }
-
-    @CompileStatic
-    static class BigIntegerWriter implements JsonTypeWriter {
-        void write(Object obj, boolean showType, Writer output) throws IOException
-        {
-            BigInteger big = (BigInteger) obj
-            output.write('"value":"')
-            output.write(big.toString(10))
-            output.write('"')
-        }
-
-        boolean hasPrimitiveForm() { return true }
-
-        void writePrimitiveForm(Object o, Writer output) throws IOException
-        {
-            BigInteger big = (BigInteger) o
-            output.write('"')
-            output.write(big.toString(10))
-            output.write('"')
-        }
-    }
-
-    @CompileStatic
-    static class BigDecimalWriter implements JsonTypeWriter {
-        void write(Object obj, boolean showType, Writer output) throws IOException
-        {
-            BigDecimal big = (BigDecimal) obj
-            output.write('"value":"')
-            output.write(big.toPlainString())
-            output.write('"')
-        }
-
-        boolean hasPrimitiveForm() { return true }
-
-        void writePrimitiveForm(Object o, Writer output) throws IOException
-        {
-            BigDecimal big = (BigDecimal) o
-            output.write('"')
-            output.write(big.toPlainString())
-            output.write('"')
-        }
-    }
-
-    @CompileStatic
-    static class StringBuilderWriter implements JsonTypeWriter {
-        void write(Object obj, boolean showType, Writer output) throws IOException
-        {
-            StringBuilder builder = (StringBuilder) obj
-            output.write('"value":"')
-            output.write(builder.toString())
-            output.write('"')
-        }
-
-        boolean hasPrimitiveForm() { return true }
-
-        void writePrimitiveForm(Object o, Writer output) throws IOException
-        {
-            StringBuilder builder = (StringBuilder) o
-            output.write('"')
-            output.write(builder.toString())
-            output.write('"')
-        }
-    }
-
-    @CompileStatic
-    static class StringBufferWriter implements JsonTypeWriter {
-        void write(Object obj, boolean showType, Writer output) throws IOException
-        {
-            StringBuffer buffer = (StringBuffer) obj;
-            output.write('"value":"')
-            output.write(buffer.toString())
-            output.write('"')
-        }
-
-        boolean hasPrimitiveForm() { return true }
-
-        void writePrimitiveForm(Object o, Writer output) throws IOException
-        {
-            StringBuffer buffer = (StringBuffer) o
-            output.write('"')
-            output.write(buffer.toString())
-            output.write('"')
-        }
     }
 
     void write(Object obj) throws IOException
