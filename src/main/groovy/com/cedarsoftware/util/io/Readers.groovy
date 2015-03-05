@@ -69,7 +69,6 @@ class Readers
             'december':'12'
     ]
 
-    @CompileStatic
     static class TimeZoneReader implements JsonTypeReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -84,7 +83,6 @@ class Readers
         }
     }
 
-    @CompileStatic
     static class LocaleReader implements JsonTypeReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -110,7 +108,6 @@ class Readers
         }
     }
 
-    @CompileStatic
     static class CalendarReader implements JsonTypeReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -133,7 +130,7 @@ class Readers
                 else
                 {
                     Object type = jObj.type
-                    c = MetaUtils.classForName((String) type)
+                    c = classForName((String) type)
                 }
 
                 Calendar calendar = (Calendar) newInstance(c)
@@ -153,7 +150,6 @@ class Readers
         }
     }
 
-    @CompileStatic
     static class DateReader implements JsonTypeReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -403,7 +399,6 @@ class Readers
         }
     }
 
-    @CompileStatic
     static class SqlDateReader extends DateReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -412,7 +407,6 @@ class Readers
         }
     }
 
-    @CompileStatic
     static class StringReader implements JsonTypeReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -436,26 +430,24 @@ class Readers
         }
     }
 
-    @CompileStatic
     static class ClassReader implements JsonTypeReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
         {
             if (o instanceof String)
             {
-                return MetaUtils.classForName((String)o)
+                return classForName((String)o)
             }
 
             JsonObject jObj = (JsonObject) o
             if (jObj.containsKey("value"))
             {
-                return jObj.target = MetaUtils.classForName((String) jObj.value)
+                return jObj.target = classForName((String) jObj.value)
             }
             return error("Class missing 'value' field")
         }
     }
 
-    @CompileStatic
     static class BigIntegerReader implements JsonTypeReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -512,7 +504,6 @@ class Readers
      * or Long.
      * @throws java.io.IOException if the input is something that cannot be converted to a BigInteger.
      */
-    @CompileStatic
     static BigInteger bigIntegerFrom(Object value) throws IOException
     {
         if (value == null)
@@ -560,7 +551,6 @@ class Readers
         return (BigInteger) error("Could not convert value: " + value.toString() + " to BigInteger.")
     }
 
-    @CompileStatic
     static class BigDecimalReader implements JsonTypeReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -656,7 +646,6 @@ class Readers
         return (BigDecimal) error("Could not convert value: " + value.toString() + " to BigInteger.")
     }
 
-    @CompileStatic
     static class StringBuilderReader implements JsonTypeReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -675,7 +664,6 @@ class Readers
         }
     }
 
-    @CompileStatic
     static class StringBufferReader implements JsonTypeReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -694,7 +682,6 @@ class Readers
         }
     }
 
-    @CompileStatic
     static class TimestampReader implements JsonTypeReader
     {
         Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -717,6 +704,7 @@ class Readers
         }
     }
 
+    // ========== Keep the relationship knowledge in one spot below ==========
     protected static Object error(String msg)
     {
         GroovyJsonReader.error(msg)
@@ -730,5 +718,10 @@ class Readers
     protected static Object newInstance(Class c)
     {
         return GroovyJsonReader.newInstance(c)
+    }
+
+    protected static Class classForName(String name)
+    {
+        return MetaUtils.classForName(name)
     }
 }

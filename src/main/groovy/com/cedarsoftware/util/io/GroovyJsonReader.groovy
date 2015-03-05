@@ -80,11 +80,6 @@ class GroovyJsonReader implements Closeable
     private final Collection<Object[]> prettyMaps = []
     private final FastPushbackReader input
     private boolean useMaps = false
-    private static Closure errorHandler = {
-        String msg, Exception e = null ->
-            if (e == null) error(msg)
-            else error(msg, e)
-    }
 
     static final ThreadLocal<FastPushbackReader> threadInput = new ThreadLocal<>()
 
@@ -124,7 +119,6 @@ class GroovyJsonReader implements Closeable
     /**
      * Use to create new instances of collection interfaces (needed for empty collections)
      */
-    @CompileStatic
     public static class CollectionFactory implements ClassFactory
     {
         public Object newInstance(Class c)
@@ -152,7 +146,6 @@ class GroovyJsonReader implements Closeable
     /**
      * Use to create new instances of Map interfaces (needed for empty Maps)
      */
-    @CompileStatic
     public static class MapFactory implements ClassFactory
     {
         public Object newInstance(Class c)
@@ -278,7 +271,6 @@ class GroovyJsonReader implements Closeable
         return closestReader.read(o, stack)
     }
 
-    @CompileStatic
     static class NullClass implements JsonTypeReader
     {
         Object read(Object jOb, Deque<JsonObject<String, Object>> stack) throws IOException
@@ -331,7 +323,6 @@ class GroovyJsonReader implements Closeable
      * could not yet be loaded, as the @ref appears ahead of the referenced object's
      * definition.  This can point to a field reference or an array/Collection element reference.
      */
-    @CompileStatic
     private static final class UnresolvedReference
     {
         private final JsonObject referencingObj
@@ -441,7 +432,7 @@ class GroovyJsonReader implements Closeable
      */
     public Object readObject() throws IOException
     {
-        JsonParser parser = new JsonParser(input, _objsRead, useMaps, errorHandler)
+        JsonParser parser = new JsonParser(input, _objsRead, useMaps)
         JsonObject root = new JsonObject()
         Object o = parser.readValue(root)
         if (JsonParser.EMPTY_OBJECT.is(o))

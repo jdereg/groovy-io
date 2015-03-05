@@ -80,21 +80,18 @@ class JsonParser
             '9':'9'
     ]
 
-    private FastPushbackReader input
+    private final FastPushbackReader input
     private final Map<Long, JsonObject> objsRead
-    private boolean useMaps
-    private Closure errorHandler
     private final StringBuilder strBuf = new StringBuilder()
     private final StringBuilder hexBuf = new StringBuilder()
     private final char[] numBuf = new char[256]
+    private final boolean useMaps
 
-
-    JsonParser(FastPushbackReader reader, Map<Long, JsonObject> objectsMap, boolean useMaps, Closure handler)
+    JsonParser(FastPushbackReader reader, Map<Long, JsonObject> objectsMap, boolean useMaps)
     {
         input = reader
         objsRead = objectsMap
         this.useMaps = useMaps
-        errorHandler = handler
     }
 
     private Object readJsonObject() throws IOException
@@ -126,7 +123,7 @@ class JsonParser
                     }
                     else
                     {
-                        errorHandler("Input is invalid JSON; object does not start with '{', c=" + c)
+                        error("Input is invalid JSON; object does not start with '{', c=" + c)
                     }
                     break
 
@@ -138,14 +135,14 @@ class JsonParser
                         c = skipWhitespaceRead()
                         if (c != ':')
                         {
-                            errorHandler("Expected ':' between string field and value")
+                            error("Expected ':' between string field and value")
                         }
                         skipWhitespace()
                         state = STATE_READ_VALUE
                     }
                     else
                     {
-                        errorHandler("Expected quote")
+                        error("Expected quote")
                     }
                     break
 
@@ -171,7 +168,7 @@ class JsonParser
                     c = skipWhitespaceRead()
                     if (c == -1)
                     {
-                        errorHandler("EOF reached before closing '}'")
+                        error("EOF reached before closing '}'")
                     }
                     if (c == '}')
                     {
@@ -183,7 +180,7 @@ class JsonParser
                     }
                     else
                     {
-                        errorHandler("Object not ended with '}'")
+                        error("Object not ended with '}'")
                     }
                     break
             }
@@ -228,14 +225,14 @@ class JsonParser
                 readToken("true")
                 return Boolean.TRUE
             case -1 as char:
-                errorHandler("EOF reached prematurely")
+                error("EOF reached prematurely")
         }
 
         if (c >= 0x30 && c <= 0x39 || c == '-')
         {
             return readNumber(c)
         }
-        return errorHandler("Unknown JSON value type")
+        return error("Unknown JSON value type")
     }
 
     /**
@@ -261,7 +258,7 @@ class JsonParser
             }
             else if (c != ',')
             {
-                errorHandler("Expected ',' or ']' inside array")
+                error("Expected ',' or ']' inside array")
             }
         }
 
@@ -283,14 +280,14 @@ class JsonParser
             int c = input.read()
             if (c == -1)
             {
-                errorHandler("EOF reached while reading token: " + token)
+                error("EOF reached while reading token: " + token)
             }
             c = Character.toLowerCase((char) c)
             int loTokenChar = token.charAt(i)
 
             if (loTokenChar != c)
             {
-                errorHandler("Expected token: " + token)
+                error("Expected token: " + token)
             }
         }
     }
@@ -340,7 +337,7 @@ class JsonParser
         }
         catch (ArrayIndexOutOfBoundsException e)
         {
-            errorHandler("Too many digits in number: " + new String(buffer))
+            error("Too many digits in number: " + new String(buffer))
         }
 
         if (isFloat)
@@ -352,7 +349,7 @@ class JsonParser
             }
             catch (NumberFormatException e)
             {
-                errorHandler("Invalid floating point number: " + num, e)
+                error("Invalid floating point number: " + num, e)
             }
         }
         boolean isNeg = buffer[0] == '-'
@@ -389,7 +386,7 @@ class JsonParser
             final int c = input.read()
             if (c == -1)
             {
-                errorHandler("EOF reached while reading JSON string")
+                error("EOF reached while reading JSON string")
             }
 
             switch (state)
@@ -443,7 +440,7 @@ class JsonParser
                             state = STATE_HEX_DIGITS_START
                             break
                         default:
-                            errorHandler("Invalid character escape sequence specified: " + c)
+                            error("Invalid character escape sequence specified: " + c)
                     }
 
                     if (c != 'u')
@@ -489,7 +486,7 @@ class JsonParser
                             }
                             break
                         default:
-                            errorHandler("Expected hexadecimal digits")
+                            error("Expected hexadecimal digits")
                     }
                     break
             }
@@ -532,5 +529,15 @@ class JsonParser
     private void skipWhitespace() throws IOException
     {
         input.unread(skipWhitespaceRead())
+    }
+
+    static Object error(String msg) throws IOException
+    {
+        return MetaUtils.error(msg)
+    }
+
+    static Object error(String msg, Exception e) throws IOException
+    {
+        return MetaUtils.error(msg, e)
     }
 }
