@@ -371,6 +371,7 @@ class JsonParser
      * This method assumes the initial quote has already been read.
      *
      * @return String read from JSON input stream.
+     * @throws java.io.IOException for stream errors or parsing errors.
      */
     private String readString()
     {
@@ -501,6 +502,7 @@ class JsonParser
      * This saves extra read/pushback.
      *
      * @return int representing the next non-whitespace character in the stream.
+     * @throws java.io.IOException for stream errors or parsing errors.
      */
     private int skipWhitespaceRead()
     {
