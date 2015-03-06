@@ -118,6 +118,14 @@ Use `GroovyJsonWriter.formatJson()` API to format a passed in JSON string to a n
 See https://github.com/jdereg/json-command-servlet for a light-weight servlet that processes Ajax / XHR calls.
 
 Featured on http://json.org.
+ * 1.0.5
+   * Performance improvement: caching the reader associated to a given class.
+   * Ease of use: `json-io` throws a `JsonIoException` (unchecked) instead of checked exception `IOException`.  This allows more flexibility in terms of error handling for the user.
+   * Code cleanup: Moved reflection related code from `JsonReader` into separate `MetaUtils` class.
+   * Code cleanup: Moved `FastPushbackReader` from `JsonReader` into separate class.
+   * Code cleanup: Moved JSON parsing code from `JsonReader` into separate `JsonParser` class.
+   * Code cleanup: Moved built-in readers from `JsonReader` to separate `Readers` class.
+   * Code cleanup: Moved resolver code (marshals map of maps to Java instances) into separate `Resolver` classes.
  * 1.0.4
    * `GroovyJsonReader.newInstance()` API made public
    * Bumped version of junit from 4.11 to 4.12
