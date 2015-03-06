@@ -428,7 +428,7 @@ class TestDates
             TestUtil.readJsonObject('[{"@type":"date"}]')
             fail()
         }
-        catch (IOException ignored) { }
+        catch (Exception ignored) { }
     }
 
     @Test

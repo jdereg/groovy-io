@@ -63,9 +63,8 @@ class ObjectResolver extends Resolver
      * arrays, Collections, or Maps.
      * @param stack   Stack (Deque) used for graph traversal.
      * @param jsonObj a Map-of-Map representation of the current object being examined (containing all fields).
-     * @throws IOException
      */
-    protected void traverseFields(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj) throws IOException
+    protected void traverseFields(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj)
     {
         Object special
         if ((special = readIfMatching(jsonObj, null, stack)) != null)
@@ -100,10 +99,9 @@ class ObjectResolver extends Resolver
      * @param field   a Java Field object representing where the jsonObj should be converted and stored.
      * @param rhs     the JSON value that will be converted and stored in the 'field' on the associated
      *                Java target object.
-     * @throws IOException for stream errors or parsing errors.
      */
     protected void assignField(final Deque<JsonObject<String, Object>> stack, final JsonObject jsonObj,
-                               final Field field, final Object rhs) throws IOException
+                               final Field field, final Object rhs)
     {
         final Object target = jsonObj.target
         try
@@ -251,9 +249,8 @@ class ObjectResolver extends Resolver
      * back into the proper element location.  For non-indexable collections (Sets), the
      * unresolved references are added via .add().
      * @param jsonObj a Map-of-Map representation of the JSON input stream.
-     * @throws IOException for stream errors or parsing errors.
      */
-    protected void traverseCollection(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj) throws IOException
+    protected void traverseCollection(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj)
     {
         final Object[] items = jsonObj.getArray()
         if (items == null || items.length == 0)
@@ -338,9 +335,8 @@ class ObjectResolver extends Resolver
      *
      * @param stack   a Stack (Deque) used to support graph traversal.
      * @param jsonObj a Map-of-Map representation of the JSON input stream.
-     * @throws java.io.IOException for stream errors or parsing errors.
      */
-    protected void traverseArray(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj) throws IOException
+    protected void traverseArray(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj)
     {
         final int len = jsonObj.getLength()
         if (len == 0)
@@ -460,7 +456,7 @@ class ObjectResolver extends Resolver
         jsonObj.clearArray()
     }
 
-    protected static Object readIfMatching(final Object o, final Class compType, final Deque<JsonObject<String, Object>> stack) throws IOException
+    protected static Object readIfMatching(final Object o, final Class compType, final Deque<JsonObject<String, Object>> stack)
     {
         if (o == null)
         {

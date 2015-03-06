@@ -141,7 +141,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
         }
     }
 
-    public Object getPrimitiveValue() throws IOException
+    public Object getPrimitiveValue()
     {
         switch(type)
         {
@@ -190,7 +190,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
                 return true
             }
         }
-        catch (IOException ignored)  { }
+        catch (Exception ignored)  { }
 
         return false
 
@@ -256,7 +256,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
             Object[] items = (Object[]) get("@items")
             return items == null ? 0 : items.length
         }
-        throw new IllegalStateException("getLength() called on a non-collection, line " + line + ", col " + column)
+        throw new JsonIoException("getLength() called on a non-collection, line " + line + ", col " + column)
     }
 
     public Class getComponentType()
@@ -294,7 +294,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
         }
         else
         {
-            throw new IllegalStateException("char[] should only have one String in the [], found " + items.length + ", line " + line + ", col " + column)
+            throw new JsonIoException("char[] should only have one String in the [], found " + items.length + ", line " + line + ", col " + column)
         }
     }
 
@@ -350,7 +350,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
             }
             else
             {
-                throw new IllegalStateException("JsonObject with @items, but no array [] associated to it, line " + line + ", column " + column)
+                throw new JsonIoException("JsonObject with @items, but no array [] associated to it, line " + line + ", column " + column)
             }
         }
         else if (containsKey("@ref"))

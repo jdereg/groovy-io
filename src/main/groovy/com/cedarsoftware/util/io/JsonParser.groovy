@@ -94,7 +94,7 @@ class JsonParser
         this.useMaps = useMaps
     }
 
-    private Object readJsonObject() throws IOException
+    private Object readJsonObject()
     {
         boolean done = false
         String field = null
@@ -194,7 +194,7 @@ class JsonParser
         return object
     }
 
-    protected Object readValue(JsonObject object) throws IOException
+    protected Object readValue(JsonObject object)
     {
         final int c = input.read()
         switch((char)c)
@@ -238,7 +238,7 @@ class JsonParser
     /**
      * Read a JSON array
      */
-    private Object readArray(JsonObject object) throws IOException
+    private Object readArray(JsonObject object)
     {
         final Collection array = new ArrayList()
 
@@ -267,11 +267,11 @@ class JsonParser
 
     /**
      * Return the specified token from the reader.  If it is not found,
-     * throw an IOException indicating that.  Converting to c to
+     * throw an Exception indicating that.  Converting to c to
      * (char) c is acceptable because the 'tokens' allowed in a
      * JSON input stream (true, false, null) are all ASCII.
      */
-    private void readToken(String token) throws IOException
+    private void readToken(String token)
     {
         final int len = token.length()
 
@@ -300,9 +300,8 @@ class JsonParser
      * @return a Number (a Long or a Double) depending on whether the number is
      *         a decimal number or integer.  This choice allows all smaller types (Float, int, short, byte)
      *         to be represented as well.
-     * @throws java.io.IOException for stream errors or parsing errors.
      */
-    private Number readNumber(int c) throws IOException
+    private Number readNumber(int c)
     {
         final FastPushbackReader inp = input
         final char[] buffer = this.numBuf
@@ -372,9 +371,8 @@ class JsonParser
      * This method assumes the initial quote has already been read.
      *
      * @return String read from JSON input stream.
-     * @throws java.io.IOException for stream errors or parsing errors.
      */
-    private String readString() throws IOException
+    private String readString()
     {
         final StringBuilder str = this.strBuf
         str.length = 0
@@ -503,9 +501,8 @@ class JsonParser
      * This saves extra read/pushback.
      *
      * @return int representing the next non-whitespace character in the stream.
-     * @throws java.io.IOException for stream errors or parsing errors.
      */
-    private int skipWhitespaceRead() throws IOException
+    private int skipWhitespaceRead()
     {
         final FastPushbackReader inp = input
         int c = inp.read()
@@ -526,17 +523,17 @@ class JsonParser
         }
     }
 
-    private void skipWhitespace() throws IOException
+    private void skipWhitespace()
     {
         input.unread(skipWhitespaceRead())
     }
 
-    static Object error(String msg) throws IOException
+    static Object error(String msg)
     {
         return MetaUtils.error(msg)
     }
 
-    static Object error(String msg, Exception e) throws IOException
+    static Object error(String msg, Exception e)
     {
         return MetaUtils.error(msg, e)
     }

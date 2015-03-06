@@ -46,7 +46,7 @@ class TestLocale
             TestUtil.readJsonObject(noProps)
             fail()
         }
-        catch(IOException e)
+        catch(Exception e)
         {
             assert e.message.toLowerCase().contains("must specify 'language'")
         }

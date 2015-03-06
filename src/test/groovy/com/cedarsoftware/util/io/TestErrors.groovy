@@ -65,13 +65,13 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("Expected ':' between string field and value"))
         }
     }
     @Test
-    void testParseInvalid1stChar() throws IOException
+    void testParseInvalid1stChar()
     {
         try
         {
@@ -94,14 +94,14 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("nknown JSON value type"))
         }
     }
 
     @Test
-    void testParseMissingLastBrace() throws IOException
+    void testParseMissingLastBrace()
     {
         try
         {
@@ -124,14 +124,14 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("EOF reached before closing '}'"))
         }
     }
 
     @Test
-    void testParseMissingLastBracket() throws IOException
+    void testParseMissingLastBracket()
     {
         String json = '[true, "bunch of ints", 1,2, 3 , 4, 5 , 6,7,8,9,10]'
         GroovyJsonReader.jsonToGroovy(json)
@@ -142,14 +142,14 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("xpected ',' or ']' inside array"))
         }
     }
 
     @Test
-    void testParseBadValueInArray() throws IOException
+    void testParseBadValueInArray()
     {
         String json
 
@@ -159,14 +159,14 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("nknown JSON value type"))
         }
     }
 
     @Test
-    void testParseObjectWithoutClosingBrace() throws IOException
+    void testParseObjectWithoutClosingBrace()
     {
         try
         {
@@ -174,7 +174,7 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("Object not ended with '}'"))
         }
@@ -189,7 +189,7 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("Expected hexadecimal digits"))
         }
@@ -204,7 +204,7 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("nvalid character escape sequence specified"))
         }
@@ -219,7 +219,7 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("EOF reached while reading JSON string"))
         }
@@ -234,7 +234,7 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("xpected token: false"))
         }
@@ -249,7 +249,7 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("EOF reached while reading token"))
         }
@@ -264,7 +264,7 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.contains("EOF reached prematurely"))
         }
@@ -281,7 +281,7 @@ class TestErrors
             GroovyJsonReader.jsonToMaps(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -289,7 +289,7 @@ class TestErrors
             GroovyJsonReader.jsonToMaps(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -297,7 +297,7 @@ class TestErrors
             GroovyJsonReader.jsonToMaps(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -305,7 +305,7 @@ class TestErrors
             GroovyJsonReader.jsonToMaps(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -313,7 +313,7 @@ class TestErrors
             GroovyJsonReader.jsonToMaps(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -321,7 +321,7 @@ class TestErrors
             GroovyJsonReader.jsonToMaps(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -329,7 +329,7 @@ class TestErrors
             GroovyJsonReader.jsonToMaps(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -337,7 +337,7 @@ class TestErrors
             GroovyJsonReader.jsonToMaps(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -345,7 +345,7 @@ class TestErrors
             GroovyJsonReader.jsonToMaps(json)
             fail()
         }
-        catch (IOException e)  { }
+        catch (Exception e)  { }
 
         try
         {
@@ -353,7 +353,7 @@ class TestErrors
             GroovyJsonReader.jsonToMaps(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -361,7 +361,7 @@ class TestErrors
             GroovyJsonReader.jsonToMaps(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
     }
 
     @Test
@@ -373,7 +373,7 @@ class TestErrors
             TestUtil.readJsonObject(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.toLowerCase().contains("unable"))
             assertTrue(e.message.toLowerCase().contains("create"))
@@ -387,7 +387,7 @@ class TestErrors
             TestUtil.readJsonObject(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.toLowerCase().contains("class listed"))
             assertTrue(e.message.toLowerCase().contains("@type"))
@@ -406,7 +406,7 @@ class TestErrors
             TestUtil.readJsonObject(str.toString())
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
     }
 
     @Test
@@ -418,7 +418,7 @@ class TestErrors
             TestUtil.readJsonObject(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -426,7 +426,7 @@ class TestErrors
             TestUtil.readJsonObject(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -434,7 +434,7 @@ class TestErrors
             TestUtil.readJsonObject(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -442,7 +442,7 @@ class TestErrors
             TestUtil.readJsonObject(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
 
         try
         {
@@ -450,7 +450,7 @@ class TestErrors
             TestUtil.readJsonObject(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
     }
 
     @Test
@@ -468,7 +468,7 @@ class TestErrors
             TestUtil.readJsonObject(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
     }
 
     @Test
@@ -479,7 +479,7 @@ class TestErrors
             TestUtil.readJsonObject('[{"@type":"class"}]')
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
     }
 
     @Test
@@ -490,7 +490,7 @@ class TestErrors
             TestUtil.readJsonObject('[{"@type":"java.util.Calendar"}]')
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
     }
 
     @Test
@@ -501,7 +501,7 @@ class TestErrors
             TestUtil.readJsonObject('[{"@type":"java.util.GregorianCalendar","value":"2012-05-03T12:39:45.1X5-0400"}]')
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
     }
 
     @Test
@@ -512,7 +512,7 @@ class TestErrors
             TestUtil.readJsonObject('{"@type":""}')
             fail()
         }
-        catch(IOException e) { }
+        catch(Exception e) { }
     }
 
     @Test
@@ -523,11 +523,11 @@ class TestErrors
             TestUtil.readJsonObject('{"@type":"java.util.ArrayList","@items":[{"@ref":1}]}')
             fail()
         }
-        catch(IOException e) { }
+        catch(Exception e) { }
     }
 
     @Test
-    void testErrorReporting() throws IOException
+    void testErrorReporting()
     {
         String json = '[{"@type":"funky"},\n{"field:"value"]'
         try
@@ -535,6 +535,6 @@ class TestErrors
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e) { }
+        catch (Exception e) { }
     }
 }

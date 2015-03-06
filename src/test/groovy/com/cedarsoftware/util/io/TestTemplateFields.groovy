@@ -168,7 +168,7 @@ class TestTemplateFields
     }
 
     @Test
-    void testSingle() throws IOException
+    void testSingle()
     {
         UseSingle useSingle = new UseSingle(new Single<String>("Steel", "Wood"))
         String json = GroovyJsonWriter.objectToJson(useSingle)
@@ -179,7 +179,7 @@ class TestTemplateFields
     }
 
     @Test
-    void testTwoParam() throws IOException
+    void testTwoParam()
     {
         UseTwoParam useTwoParam = new UseTwoParam(new TwoParam("Hello", "Goodbye", new Point(20, 40)))
         String json = GroovyJsonWriter.objectToJson(useTwoParam)
@@ -215,7 +215,7 @@ class TestTemplateFields
     }
 
     @Test
-    void testStaticSingle() throws IOException
+    void testStaticSingle()
     {
         StaticUseSingle useSingle = new StaticUseSingle(new StaticSingle<>("Boonies"))
 

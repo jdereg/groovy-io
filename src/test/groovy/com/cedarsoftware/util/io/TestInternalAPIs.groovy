@@ -26,7 +26,7 @@ class TestInternalAPIs
 {
     static class DerivedWriter extends GroovyJsonWriter
     {
-        public DerivedWriter(OutputStream out) throws IOException
+        public DerivedWriter(OutputStream out)
         {
             super(out)
         }
@@ -72,10 +72,10 @@ class TestInternalAPIs
     void testNoAnalysisForCustomWriter() throws Exception
     {
         GroovyJsonWriter.addWriter(Dog.class, new JsonTypeWriter() {
-            public void writePrimitiveForm(Object o, Writer out)  throws IOException
+            public void writePrimitiveForm(Object o, Writer out)
             { }
 
-            public void write(Object o, boolean showType, Writer out)  throws IOException
+            public void write(Object o, boolean showType, Writer out)
             { }
 
             public boolean hasPrimitiveForm()

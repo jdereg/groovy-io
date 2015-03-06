@@ -176,9 +176,8 @@ class GroovyJsonReader implements Closeable
      *
      * @param json String JSON input
      * @return Groovy object graph matching JSON input
-     * @throws java.io.IOException If an I/O error occurs
      */
-    public static Object jsonToGroovy(String json) throws IOException
+    public static Object jsonToGroovy(String json)
     {
         ByteArrayInputStream ba = new ByteArrayInputStream(json.getBytes("UTF-8"))
         GroovyJsonReader jr = new GroovyJsonReader(ba, false)
@@ -196,9 +195,8 @@ class GroovyJsonReader implements Closeable
      * @param json String JSON input
      * @return Groovy object graph of Maps matching JSON input,
      *         or null if an error occurred.
-     * @throws java.io.IOException If an I/O error occurs
      */
-    public static Map jsonToMaps(String json) throws IOException
+    public static Map jsonToMaps(String json)
     {
         ByteArrayInputStream ba = new ByteArrayInputStream(json.getBytes("UTF-8"))
         GroovyJsonReader jr = new GroovyJsonReader(ba, true)
@@ -254,9 +252,8 @@ class GroovyJsonReader implements Closeable
      *
      * @return Groovy Object graph constructed from InputStream supplying
      *         JSON serialized content.
-     * @throws java.io.IOException for stream errors or parsing errors.
      */
-    public Object readObject() throws IOException
+    public Object readObject()
     {
         JsonParser parser = new JsonParser(input, objsRead, useMaps)
         JsonObject root = new JsonObject()
@@ -297,7 +294,7 @@ class GroovyJsonReader implements Closeable
      * JSON input that was parsed in an earlier call to JsonReader.
      * @return a typed Groovy instance that was serialized into JSON.
      */
-    public Object jsonObjectsToGroovy(JsonObject root) throws IOException
+    public Object jsonObjectsToGroovy(JsonObject root)
     {
         useMaps = false
         return convertParsedMapsToGroovy(root)
@@ -313,7 +310,7 @@ class GroovyJsonReader implements Closeable
      * JSON input that was parsed in an earlier call to JsonReader.
      * @return a typed Groovy instance that was serialized into JSON.
      */
-    protected Object convertParsedMapsToGroovy(JsonObject root) throws IOException
+    protected Object convertParsedMapsToGroovy(JsonObject root)
     {
         Resolver resolver = useMaps ? new MapResolver(objsRead, true) : new ObjectResolver(objsRead, false)
         resolver.createGroovyObjectInstance(Object.class, root)
@@ -374,10 +371,13 @@ class GroovyJsonReader implements Closeable
                 input.close()
             }
         }
-        catch (IOException ignored) { }
+        catch (Exception e)
+        {
+            throw new JsonIoException("Error close stream:", e)
+        }
     }
 
-    static Object newInstance(Class c) throws IOException
+    static Object newInstance(Class c)
     {
         if (factory.containsKey(c))
         {
@@ -395,14 +395,14 @@ class GroovyJsonReader implements Closeable
         return msg
     }
 
-    static Object error(String msg) throws IOException
+    static Object error(String msg)
     {
-        throw new IOException(getErrorMessage(msg))
+        throw new JsonIoException(getErrorMessage(msg))
     }
 
-    static Object error(String msg, Exception e) throws IOException
+    static Object error(String msg, Exception e)
     {
-        throw new IOException(getErrorMessage(msg), e)
+        throw new JsonIoException(getErrorMessage(msg), e)
     }
 
     private static String getLastReadSnippet()

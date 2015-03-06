@@ -154,7 +154,7 @@ class TestBigInteger
         {
             TestUtil.readJsonObject(json)
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assert e.message.toLowerCase().contains("too many digits")
         }

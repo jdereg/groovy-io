@@ -105,7 +105,7 @@ class GroovyJsonWriter implements Closeable, Flushable
     /**
      * @see GroovyJsonWriter#objectToJson(Object, java.util.Map)
      */
-    static String objectToJson(Object item) throws IOException
+    static String objectToJson(Object item)
     {
         return objectToJson(item, new HashMap<String, Object>())
     }
@@ -147,9 +147,8 @@ class GroovyJsonWriter implements Closeable, Flushable
      * be turned back into a date by using 'new Date(longValue)'.
      * @return String containing JSON representation of passed
      *         in object.
-     * @throws java.io.IOException If an I/O error occurs
      */
-    static String objectToJson(Object item, Map<String, Object> optionalArgs) throws IOException
+    static String objectToJson(Object item, Map<String, Object> optionalArgs)
     {
         ByteArrayOutputStream stream = new ByteArrayOutputStream()
         GroovyJsonWriter writer = new GroovyJsonWriter(stream, optionalArgs)
@@ -163,7 +162,7 @@ class GroovyJsonWriter implements Closeable, Flushable
      * @param json String input JSON
      * @return String containing equivalent JSON, formatted nicely for human readability.
      */
-    static String formatJson(String json) throws IOException
+    static String formatJson(String json)
     {
         Map map = GroovyJsonReader.jsonToMaps(json)
         return objectToJson(map, [(PRETTY_PRINT):true] as Map<String, Object>)
@@ -172,7 +171,7 @@ class GroovyJsonWriter implements Closeable, Flushable
     /**
      * @see GroovyJsonWriter#GroovyJsonWriter(java.io.OutputStream, java.util.Map)
      */
-    GroovyJsonWriter(OutputStream out) throws IOException
+    GroovyJsonWriter(OutputStream out)
     {
         this(out, [:])
     }
@@ -186,9 +185,8 @@ class GroovyJsonWriter implements Closeable, Flushable
      * in which case it will be used.  This setting is for both java.util.Date and java.sql.Date.
      * If the DATE_FORMAT key is not used, then dates will be formatted as longs.  This long can
      * be turned back into a date by using 'new Date(longValue)'.
-     * @throws java.io.IOException
      */
-    GroovyJsonWriter(OutputStream out, Map<String, Object> optionalArgs) throws IOException
+    GroovyJsonWriter(OutputStream out, Map<String, Object> optionalArgs)
     {
         Map args = _args.get()
         args.clear()
@@ -215,7 +213,7 @@ class GroovyJsonWriter implements Closeable, Flushable
                     Field f = classFields[field]
                     if (f == null)
                     {
-                        throw new IllegalArgumentException("Unable to locate field: " + field + " on class: " + clazz.getName() + ". Make sure the fields in the FIELD_SPECIFIERS map existing on the associated class.")
+                        throw new JsonIoException("Unable to locate field: " + field + " on class: " + clazz.getName() + ". Make sure the fields in the FIELD_SPECIFIERS map existing on the associated class.")
                     }
                     newList.add(f)
                 }
@@ -230,7 +228,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
         catch (UnsupportedEncodingException e)
         {
-            throw new IOException('Unsupported encoding.  Get a JVM that supports UTF-8', e)
+            throw new JsonIoException('Unsupported encoding.  Get a JVM that supports UTF-8', e)
         }
     }
 
@@ -262,22 +260,22 @@ class GroovyJsonWriter implements Closeable, Flushable
         return false
     }
 
-    protected void tabIn() throws IOException
+    protected void tabIn()
     {
         tab(out, 1)
     }
 
-    protected void newLine() throws IOException
+    protected void newLine()
     {
         tab(out, 0)
     }
 
-    protected void tabOut() throws IOException
+    protected void tabOut()
     {
         tab(out, -1)
     }
 
-    private void tab(Writer output, int delta) throws IOException
+    private void tab(Writer output, int delta)
     {
         if (!isPrettyPrint())
         {
@@ -291,7 +289,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
     }
 
-    boolean writeIfMatching(Object o, boolean showType, Writer output) throws IOException
+    boolean writeIfMatching(Object o, boolean showType, Writer output)
     {
         Class c = o.getClass()
         if (notCustom.contains(c))
@@ -302,7 +300,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         return writeCustom(c, o, showType, output)
     }
 
-    boolean writeArrayElementIfMatching(Class arrayComponentClass, Object o, boolean showType, Writer output) throws IOException
+    boolean writeArrayElementIfMatching(Class arrayComponentClass, Object o, boolean showType, Writer output)
     {
         if (!o.getClass().isAssignableFrom(arrayComponentClass) || notCustom.contains(o.getClass()))
         {
@@ -312,7 +310,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         return writeCustom(arrayComponentClass, o, showType, output)
     }
 
-    private boolean writeCustom(Class arrayComponentClass, Object o, boolean showType, Writer output) throws IOException
+    private boolean writeCustom(Class arrayComponentClass, Object o, boolean showType, Writer output)
     {
 		JsonTypeWriter closestWriter = getCustomWriter(arrayComponentClass)
 
@@ -365,9 +363,9 @@ class GroovyJsonWriter implements Closeable, Flushable
 
     static class NullClass implements JsonTypeWriter
     {
-        void write(Object o, boolean showType, Writer output) throws IOException { }
+        void write(Object o, boolean showType, Writer output) { }
         boolean hasPrimitiveForm()  { return false }
-        void writePrimitiveForm(Object o, Writer output) throws IOException { }
+        void writePrimitiveForm(Object o, Writer output) { }
     }
 
     private static JsonTypeWriter getCustomWriter(Class c)
@@ -429,7 +427,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         writerCache[c] = nullWriter
     }
 
-    void write(Object obj) throws IOException
+    void write(Object obj)
     {
         traceReferences(obj)
         objVisited.clear()
@@ -598,7 +596,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         return fields
     }
 
-    private boolean writeOptionalReference(Object obj) throws IOException
+    private boolean writeOptionalReference(Object obj)
     {
         if (obj != null && MetaUtils.isLogicalPrimitive(obj.getClass()))
         {
@@ -623,7 +621,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         return false
     }
 
-    protected void writeImpl(Object obj, boolean showType) throws IOException
+    protected void writeImpl(Object obj, boolean showType)
     {
         if (obj == null)
         {
@@ -675,13 +673,13 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
     }
 
-    private void writeId(final String id) throws IOException
+    private void writeId(final String id)
     {
         out.write('"@id":')
         out.write(id == null ? "0" : id)
     }
 
-    private static void writeType(Object obj, Writer output) throws IOException
+    private static void writeType(Object obj, Writer output)
     {
         output.write('"@type":"')
         final Class c = obj.getClass()
@@ -728,7 +726,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         output.write('"')
     }
 
-    private void writePrimitive(final Object obj) throws IOException
+    private void writePrimitive(final Object obj)
     {
         if (obj instanceof Character)
         {
@@ -740,7 +738,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
     }
 
-    private void writeArray(final Object array, final boolean showType) throws IOException
+    private void writeArray(final Object array, final boolean showType)
     {
         if (writeOptionalReference(array))
         {
@@ -895,7 +893,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         return Boolean.TRUE.equals(_args.get().containsKey(TYPE))
     }
 
-    private void writeBooleanArray(boolean[] booleans, int lenMinus1) throws IOException
+    private void writeBooleanArray(boolean[] booleans, int lenMinus1)
     {
         final Writer output = this.out
         for (int i = 0; i < lenMinus1; i++)
@@ -905,7 +903,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         output.write(Boolean.toString(booleans[lenMinus1]))
     }
 
-    private void writeDoubleArray(double[] doubles, int lenMinus1) throws IOException
+    private void writeDoubleArray(double[] doubles, int lenMinus1)
     {
         final Writer output = this.out;
         for (int i = 0; i < lenMinus1; i++)
@@ -916,7 +914,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         output.write(Double.toString(doubles[lenMinus1]))
     }
 
-    private void writeFloatArray(float[] floats, int lenMinus1) throws IOException
+    private void writeFloatArray(float[] floats, int lenMinus1)
     {
         final Writer output = this.out;
         for (int i = 0; i < lenMinus1; i++)
@@ -927,7 +925,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         output.write(Float.toString(floats[lenMinus1]))
     }
 
-    private void writeLongArray(long[] longs, int lenMinus1) throws IOException
+    private void writeLongArray(long[] longs, int lenMinus1)
     {
         final Writer output = this.out;
         for (int i = 0; i < lenMinus1; i++)
@@ -938,7 +936,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         output.write(Long.toString(longs[lenMinus1]))
     }
 
-    private void writeIntArray(int[] ints, int lenMinus1) throws IOException
+    private void writeIntArray(int[] ints, int lenMinus1)
     {
         final Writer output = this.out;
         for (int i = 0; i < lenMinus1; i++)
@@ -949,7 +947,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         output.write(Integer.toString(ints[lenMinus1]))
     }
 
-    private void writeShortArray(short[] shorts, int lenMinus1) throws IOException
+    private void writeShortArray(short[] shorts, int lenMinus1)
     {
         final Writer output = this.out;
         for (int i = 0; i < lenMinus1; i++)
@@ -960,7 +958,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         output.write(Integer.toString(shorts[lenMinus1]))
     }
 
-    private void writeByteArray(byte[] bytes, int lenMinus1) throws IOException
+    private void writeByteArray(byte[] bytes, int lenMinus1)
     {
         final Writer output = this.out;
         final Object[] byteStrs = byteStrings;
@@ -972,7 +970,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         output.write((char[]) byteStrs[bytes[lenMinus1] + 128])
     }
 
-    private void writeCollection(Collection col, boolean showType) throws IOException
+    private void writeCollection(Collection col, boolean showType)
     {
         if (writeOptionalReference(col))
         {
@@ -1032,7 +1030,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
     }
 
-    private void writeIdAndTypeIfNeeded(Object col, boolean showType, boolean referenced) throws IOException
+    private void writeIdAndTypeIfNeeded(Object col, boolean showType, boolean referenced)
     {
         if (referenced)
         {
@@ -1050,7 +1048,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
     }
 
-    private void beginCollection(boolean showType, boolean referenced) throws IOException
+    private void beginCollection(boolean showType, boolean referenced)
     {
         if (showType || referenced)
         {
@@ -1065,7 +1063,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         tabIn()
     }
 
-    private void writeJsonObjectArray(JsonObject jObj, boolean showType) throws IOException
+    private void writeJsonObjectArray(JsonObject jObj, boolean showType)
     {
         if (writeOptionalReference(jObj))
         {
@@ -1192,7 +1190,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
     }
 
-    private void writeJsonObjectCollection(JsonObject jObj, boolean showType) throws IOException
+    private void writeJsonObjectCollection(JsonObject jObj, boolean showType)
     {
         if (writeOptionalReference(jObj))
         {
@@ -1260,7 +1258,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
     }
 
-    private void writeJsonObjectMap(JsonObject jObj, boolean showType) throws IOException
+    private void writeJsonObjectMap(JsonObject jObj, boolean showType)
     {
         if (writeOptionalReference(jObj))
         {
@@ -1351,7 +1349,7 @@ class GroovyJsonWriter implements Closeable, Flushable
     }
 
 
-    private boolean writeJsonObjectMapWithStringKeys(JsonObject jObj, boolean showType) throws IOException
+    private boolean writeJsonObjectMapWithStringKeys(JsonObject jObj, boolean showType)
     {
         if (!ensureJsonPrimitiveKeys(jObj))
         {
@@ -1411,7 +1409,7 @@ class GroovyJsonWriter implements Closeable, Flushable
     }
 
 
-    private void writeJsonObjectObject(JsonObject jObj, boolean showType) throws IOException
+    private void writeJsonObjectObject(JsonObject jObj, boolean showType)
     {
         if (writeOptionalReference(jObj))
         {
@@ -1513,7 +1511,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         return false
     }
 
-    private void writeMap(Map map, boolean showType) throws IOException
+    private void writeMap(Map map, boolean showType)
     {
         if (writeOptionalReference(map))
         {
@@ -1593,7 +1591,7 @@ class GroovyJsonWriter implements Closeable, Flushable
     }
 
 
-    private boolean writeMapWithStringKeys(Map map, boolean showType) throws IOException
+    private boolean writeMapWithStringKeys(Map map, boolean showType)
     {
         if (!ensureJsonPrimitiveKeys(map))
         {
@@ -1627,7 +1625,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         return writeMapBody(map.entrySet().iterator())
     }
 
-    private boolean writeMapBody(final Iterator i) throws IOException
+    private boolean writeMapBody(final Iterator i)
     {
         final Writer output = out;
         while (i.hasNext())
@@ -1667,9 +1665,8 @@ class GroovyJsonWriter implements Closeable, Flushable
     /**
      * Write an element that is contained in some type of collection or Map.
      * @param o Collection element to output in JSON format.
-     * @throws java.io.IOException if an error occurs writing to the output stream.
      */
-    private void writeCollectionElement(Object o) throws IOException
+    private void writeCollectionElement(Object o)
     {
         if (o == null)
         {
@@ -1694,9 +1691,8 @@ class GroovyJsonWriter implements Closeable, Flushable
      * @param showType boolean true means show the "@type" field, false
      *                 eliminates it.  Many times the type can be dropped because it can be
      *                 inferred from the field or array type.
-     * @throws java.io.IOException if an error occurs writing to the output stream.
      */
-    private void writeObject(final Object obj, final boolean showType) throws IOException
+    private void writeObject(final Object obj, final boolean showType)
     {
         if (writeIfMatching(obj, showType, out))
         {
@@ -1757,7 +1753,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         out.write('}')
     }
 
-    private boolean writeField(Object obj, boolean first, String fieldName, Field field, boolean allowTransient) throws IOException
+    private boolean writeField(Object obj, boolean first, String fieldName, Field field, boolean allowTransient)
     {
         if (!allowTransient && (field.modifiers & Modifier.TRANSIENT) != 0)
         {   // Do not write transient fields
@@ -1816,9 +1812,8 @@ class GroovyJsonWriter implements Closeable, Flushable
      * characters in the range of ASCII space to a '~' as ASCII, and anything higher in UTF-8.
      *
      * @param s String to be written in utf8 format on the output stream.
-     * @throws java.io.IOException if an error occurs writing to the output stream.
      */
-    static void writeJsonUtf8String(String s, final Writer output) throws IOException
+    static void writeJsonUtf8String(String s, final Writer output)
     {
         output.write('\"')
         final int len = s.length()

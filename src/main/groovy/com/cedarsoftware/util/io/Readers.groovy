@@ -71,7 +71,7 @@ class Readers
 
     static class TimeZoneReader implements JsonTypeReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             JsonObject jObj = (JsonObject)o
             Object zone = jObj.zone
@@ -85,7 +85,7 @@ class Readers
 
     static class LocaleReader implements JsonTypeReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             JsonObject jObj = (JsonObject) o
             Object language = jObj.language
@@ -110,7 +110,7 @@ class Readers
 
     static class CalendarReader implements JsonTypeReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             String time = null
             try
@@ -152,7 +152,7 @@ class Readers
 
     static class DateReader implements JsonTypeReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             if (o instanceof Long)
             {
@@ -182,7 +182,7 @@ class Readers
             }
         }
 
-        private static Date parseDate(String dateStr) throws IOException
+        private static Date parseDate(String dateStr)
         {
             if (dateStr == null)
             {
@@ -401,7 +401,7 @@ class Readers
 
     static class SqlDateReader extends DateReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             return new java.sql.Date(((Date) super.read(o, stack)).time)
         }
@@ -409,7 +409,7 @@ class Readers
 
     static class StringReader implements JsonTypeReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             if (o instanceof String)
             {
@@ -432,7 +432,7 @@ class Readers
 
     static class ClassReader implements JsonTypeReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             if (o instanceof String)
             {
@@ -450,7 +450,7 @@ class Readers
 
     static class BigIntegerReader implements JsonTypeReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             JsonObject jObj = null
             Object value = o
@@ -502,9 +502,8 @@ class Readers
      * input is a Double, Float, or BigDecimal, a BigInteger will be returned that retains the
      * integer portion (fractional part is dropped).  The input can be a Byte, Short, Integer,
      * or Long.
-     * @throws java.io.IOException if the input is something that cannot be converted to a BigInteger.
      */
-    static BigInteger bigIntegerFrom(Object value) throws IOException
+    static BigInteger bigIntegerFrom(Object value)
     {
         if (value == null)
         {
@@ -553,7 +552,7 @@ class Readers
 
     static class BigDecimalReader implements JsonTypeReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             JsonObject jObj = null
             Object value = o
@@ -602,9 +601,8 @@ class Readers
      * as many input types as possible.  For example, if the input is a Boolean, a BigDecimal of
      * 1 or 0 will be returned.  If the input is a String "", a null will be returned. The input
      * can be a Byte, Short, Integer, Long, or BigInteger.
-     * @throws java.io.IOException if the input is something that cannot be converted to a BigDecimal.
      */
-    static BigDecimal bigDecimalFrom(Object value) throws IOException
+    static BigDecimal bigDecimalFrom(Object value)
     {
         if (value == null)
         {
@@ -648,7 +646,7 @@ class Readers
 
     static class StringBuilderReader implements JsonTypeReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             if (o instanceof String)
             {
@@ -666,7 +664,7 @@ class Readers
 
     static class StringBufferReader implements JsonTypeReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             if (o instanceof String)
             {
@@ -684,7 +682,7 @@ class Readers
 
     static class TimestampReader implements JsonTypeReader
     {
-        Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             JsonObject jObj = (JsonObject) o
             Object time = jObj.time

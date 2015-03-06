@@ -367,7 +367,7 @@ class TestMaps
             TestUtil.readJsonObject(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assert e.message.toLowerCase().contains('@keys or @items')
             assert e.message.toLowerCase().contains('empty')
@@ -379,7 +379,7 @@ class TestMaps
             TestUtil.readJsonObject(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assert e.message.toLowerCase().contains("different size")
         }

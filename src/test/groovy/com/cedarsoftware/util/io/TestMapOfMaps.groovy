@@ -55,7 +55,7 @@ class TestMapOfMaps
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.toLowerCase().contains("unable"))
             assertTrue(e.message.toLowerCase().contains("create"))
@@ -74,9 +74,9 @@ class TestMapOfMaps
             GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            assertTrue(e.message.toLowerCase().contains('ioexception setting field'))
+            assertTrue(e.message.toLowerCase().contains('exception setting field'))
         }
 
         map = GroovyJsonReader.jsonToMaps(json)
@@ -319,7 +319,7 @@ class TestMapOfMaps
             o = GroovyJsonReader.jsonToMaps("[This is not quoted]")
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.toLowerCase().contains("token"))
         }

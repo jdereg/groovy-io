@@ -151,7 +151,7 @@ class TestPrimitives
             str = (String) GroovyJsonReader.jsonToGroovy(json)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             assertTrue(e.message.toLowerCase().contains("'value'"))
         }

@@ -33,7 +33,7 @@ class TestCustomClassHandler
     }
 
     public class WeirdDateWriter implements JsonTypeWriter {
-        public void write(Object o, boolean showType, Writer out) throws IOException
+        public void write(Object o, boolean showType, Writer out)
         {
             String value = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").format((Date) o)
             out.write('"stuff":"')
@@ -46,7 +46,7 @@ class TestCustomClassHandler
             return true;
         }
 
-        public void writePrimitiveForm(Object o, Writer out) throws IOException
+        public void writePrimitiveForm(Object o, Writer out)
         {
             String value = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").format((Date)o)
             out.write('"')
@@ -57,7 +57,7 @@ class TestCustomClassHandler
 
     public class WeirdDateReader implements JsonTypeReader
     {
-        public Object read(Object o, Deque<JsonObject<String, Object>> stack) throws IOException
+        public Object read(Object o, Deque<JsonObject<String, Object>> stack)
         {
             if (o instanceof String)
             {
@@ -67,7 +67,7 @@ class TestCustomClassHandler
                 }
                 catch (ParseException e)
                 {
-                    throw new IOException("Date format incorrect")
+                    throw new JsonIoException("Date format incorrect")
                 }
             }
 
@@ -80,11 +80,10 @@ class TestCustomClassHandler
                 }
                 catch (ParseException e)
                 {
-                    throw new IOException("Date format incorrect")
+                    throw new JsonIoException("Date format incorrect")
                 }
             }
-            throw new IOException("Date missing 'stuff' field")
-
+            throw new JsonIoException("Date missing 'stuff' field")
         }
     }
 

@@ -5,7 +5,6 @@ import groovy.transform.CompileStatic
 import java.lang.reflect.Array
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
-import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.sql.Timestamp
@@ -279,7 +278,7 @@ class MetaUtils
         {
             if (name == null || name.isEmpty())
             {
-                throw new IllegalArgumentException("Class name cannot be null or empty.");
+                throw new JsonIoException("Class name cannot be null or empty.");
             }
             Class c = nameToClass[name]
             return c == null ? loadClass(name) : c
@@ -352,7 +351,7 @@ class MetaUtils
         return currentClass
     }
 
-    static Object newInstanceImpl(Class c) throws IOException
+    static Object newInstanceImpl(Class c)
     {
         if (unmodifiableSortedMap.getClass().isAssignableFrom(c))
         {
@@ -426,7 +425,7 @@ class MetaUtils
     /**
      * Return constructor and instance as elements 0 and 1, respectively.
      */
-    private static Object[] newInstanceEx(Class c) throws IOException
+    private static Object[] newInstanceEx(Class c)
     {
         try
         {
@@ -446,7 +445,7 @@ class MetaUtils
         }
     }
 
-    private static Object[] tryOtherConstruction(Class c) throws IOException
+    private static Object[] tryOtherConstruction(Class c)
     {
         Constructor[] constructors = c.declaredConstructors
         if (constructors.length == 0)
@@ -499,7 +498,7 @@ class MetaUtils
         return null
     }
 
-    protected static Object[] fillArgs(Class[] argTypes, boolean useNull) throws IOException
+    protected static Object[] fillArgs(Class[] argTypes, boolean useNull)
     {
         final Object[] values = new Object[argTypes.length]
         for (int i = 0; i < argTypes.length; i++)
@@ -605,7 +604,7 @@ class MetaUtils
         return values
     }
 
-    protected static Object newPrimitiveWrapper(Class c, Object rhs) throws IOException
+    protected static Object newPrimitiveWrapper(Class c, Object rhs)
     {
         final String cname
         try
@@ -792,9 +791,10 @@ class MetaUtils
             {
                 return allocateInstance.invoke(sunUnsafe, clazz)
             }
-            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
+            catch (Exception e)
             {
-                throw new RuntimeException(e)
+                String name = clazz ?: clazz.getName()
+                throw new JsonIoException('Unable to create instance of class: ' + name, e)
             }
         }
     }

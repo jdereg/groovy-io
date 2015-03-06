@@ -41,7 +41,7 @@ class TestClassForName
             MetaUtils.classForName(null)
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
         }
         try
@@ -49,7 +49,7 @@ class TestClassForName
             MetaUtils.classForName('Smith&Wesson')
             fail()
         }
-        catch (IOException e)
+        catch (Exception e)
         {
         }
     }

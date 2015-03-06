@@ -75,7 +75,7 @@ abstract class Resolver
      */
     static class NullClass implements JsonTypeReader
     {
-        public Object read(Object jOb, Deque<JsonObject<String, Object>> stack) throws IOException
+        public Object read(Object jOb, Deque<JsonObject<String, Object>> stack)
         {
             return null
         }
@@ -96,9 +96,8 @@ abstract class Resolver
      *             input after it has been completely read.
      * @return Properly constructed, typed, Java object graph built from a Map
      * of Maps representation (JsonObject root).
-     * @throws IOException for stream errors or parsing errors.
      */
-    protected Object convertMapsToObjects(final JsonObject<String, Object> root) throws IOException
+    protected Object convertMapsToObjects(final JsonObject<String, Object> root)
     {
         final Deque<JsonObject<String, Object>> stack = new ArrayDeque<>()
         stack.addFirst(root)
@@ -132,13 +131,13 @@ abstract class Resolver
         return root.target
     }
 
-    protected abstract void traverseFields(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj) throws IOException
+    protected abstract void traverseFields(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj)
 
-    protected abstract void traverseCollection(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj) throws IOException
+    protected abstract void traverseCollection(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj)
 
-    protected abstract void traverseArray(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj) throws IOException
+    protected abstract void traverseArray(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj)
 
-    protected void cleanup() throws IOException
+    protected void cleanup()
     {
         patchUnresolvedReferences()
         rehashMaps()
@@ -154,9 +153,8 @@ abstract class Resolver
      *
      * @param stack   a Stack (Deque) used to support graph traversal.
      * @param jsonObj a Map-of-Map representation of the JSON input stream.
-     * @throws java.io.IOException for stream errors or parsing errors.
      */
-    protected void traverseMap(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj) throws IOException
+    protected void traverseMap(Deque<JsonObject<String, Object>> stack, JsonObject<String, Object> jsonObj)
     {
         // Convert @keys to a Collection of Java objects.
         convertMapToKeysItems(jsonObj)
@@ -239,9 +237,8 @@ abstract class Resolver
      * @param jsonObj Map-of-Map representation of object to create.
      * @return a new Java object of the appropriate type (clazz) using the jsonObj to provide
      * enough hints to get the right class instantiated.  It is not populated when returned.
-     * @throws IOException for stream errors or parsing errors.
      */
-    protected Object createGroovyObjectInstance(Class clazz, JsonObject jsonObj) throws IOException
+    protected Object createGroovyObjectInstance(Class clazz, JsonObject jsonObj)
     {
         final boolean useMapsLocal = useMaps
         final String type = jsonObj.type
@@ -255,7 +252,7 @@ abstract class Resolver
             {
                 c = MetaUtils.classForName(type)
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                 if (useMapsLocal)
                 {
@@ -360,7 +357,7 @@ abstract class Resolver
         return jsonObj.target = mate
     }
 
-    protected JsonObject getReferencedObj(Long ref) throws IOException
+    protected JsonObject getReferencedObj(Long ref)
     {
         JsonObject refObject = objsRead[ref]
         if (refObject == null)
@@ -428,10 +425,8 @@ abstract class Resolver
     /**
      * For all fields where the value was "@ref":"n" where 'n' was the id of an object
      * that had not yet been encountered in the stream, make the final substitution.
-     *
-     * @throws IOException
      */
-    protected void patchUnresolvedReferences() throws IOException
+    protected void patchUnresolvedReferences()
     {
         Iterator i = unresolvedRefs.iterator()
         while (i.hasNext())
@@ -567,17 +562,17 @@ abstract class Resolver
     }
 
     // ========== Keep relationship knowledge below the line ==========
-    public static Object newInstance(Class c) throws IOException
+    public static Object newInstance(Class c)
     {
         return GroovyJsonReader.newInstance(c)
     }
 
-    protected static Object error(String msg) throws IOException
+    protected static Object error(String msg)
     {
         return GroovyJsonReader.error(msg)
     }
 
-    protected static Object error(String msg, Exception e) throws IOException
+    protected static Object error(String msg, Exception e)
     {
         return GroovyJsonReader.error(msg, e)
     }

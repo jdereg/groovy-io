@@ -22,5 +22,5 @@ import groovy.transform.CompileStatic
 @CompileStatic
 interface JsonTypeReader
 {
-    Object read(Object jOb, Deque<JsonObject<String, Object>> stack) throws IOException
+    Object read(Object jOb, Deque<JsonObject<String, Object>> stack)
 }

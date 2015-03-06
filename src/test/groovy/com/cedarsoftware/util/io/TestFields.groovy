@@ -491,7 +491,7 @@ class TestFields
         }
         catch (Exception e)
         {
-            assertTrue(e instanceof IllegalArgumentException)
+            assert e.message.toLowerCase().contains('unable to locate field')
         }
     }
 
