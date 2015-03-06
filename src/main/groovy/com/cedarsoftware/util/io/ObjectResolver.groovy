@@ -1,5 +1,13 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
+
+import java.lang.reflect.Array
+import java.lang.reflect.Field
+import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
+import java.lang.reflect.TypeVariable
+
 /**
  * The ObjectResolver converts the raw Maps created from the GroovyJsonParser to Groovy
  * objects (a graph of Groovy instances).  The Maps have an optional type entry associated
@@ -29,7 +37,7 @@ package com.cedarsoftware.util.io
  *         <br/>
  *         Copyright (c) Cedar Software LLC
  *         <br/><br/>
- *         Licensed under the Apache License, Version 2.0 (the "License");
+ *         Licensed under the Apache License, Version 2.0 (the "License")
  *         you may not use this file except in compliance with the License.
  *         You may obtain a copy of the License at
  *         <br/><br/>
@@ -41,6 +49,672 @@ package com.cedarsoftware.util.io
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class ObjectResolver extends Resolver
 {
+    protected ObjectResolver(Map<Long, JsonObject> objsRead, boolean useMaps)
+    {
+        super(objsRead, useMaps)
+    }
+
+    /**
+     * Walk the Java object fields and copy them from the JSON object to the Java object, performing
+     * any necessary conversions on primitives, or deep traversals for field assignments to other objects,
+     * arrays, Collections, or Maps.
+     * @param stack   Stack (Deque) used for graph traversal.
+     * @param jsonObj a Map-of-Map representation of the current object being examined (containing all fields).
+     * @throws IOException
+     */
+    protected void traverseFields(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj) throws IOException
+    {
+        Object special
+        if ((special = readIfMatching(jsonObj, null, stack)) != null)
+        {
+            jsonObj.target = special
+            return
+        }
+
+        final Object javaMate = jsonObj.target
+        final Iterator<Map.Entry<String, Object>> i = jsonObj.entrySet().iterator()
+        final Class cls = javaMate.getClass()
+
+        while (i.hasNext())
+        {
+            Map.Entry<String, Object> e = i.next()
+            String key = e.key
+            final Field field = MetaUtils.getField(cls, key)
+            Object rhs = e.value
+            if (field != null)
+            {
+                assignField(stack, jsonObj, field, rhs)
+            }
+        }
+        jsonObj.clear()    // Reduce memory required during processing
+    }
+
+    /**
+     * Map Json Map object field to Java object field.
+     *
+     * @param stack   Stack (Deque) used for graph traversal.
+     * @param jsonObj a Map-of-Map representation of the current object being examined (containing all fields).
+     * @param field   a Java Field object representing where the jsonObj should be converted and stored.
+     * @param rhs     the JSON value that will be converted and stored in the 'field' on the associated
+     *                Java target object.
+     * @throws IOException for stream errors or parsing errors.
+     */
+    protected void assignField(final Deque<JsonObject<String, Object>> stack, final JsonObject jsonObj,
+                               final Field field, final Object rhs) throws IOException
+    {
+        final Object target = jsonObj.target
+        try
+        {
+            final Class fieldType = field.type
+            if (rhs == null)
+            {   // Logically clear field (allows null to be set against primitive fields, yielding their zero value.
+                if (fieldType.isPrimitive())
+                {
+                    field.set(target, MetaUtils.newPrimitiveWrapper(fieldType, "0"))
+                }
+                else
+                {
+                    field.set(target, null)
+                }
+                return
+            }
+
+            // If there is a "tree" of objects (e.g, Map<String, List<Person>>), the subobjects may not have an
+            // @type on them, if the source of the JSON is from JSON.stringify().  Deep traverse the args and
+            // mark @type on the items within the Maps and Collections, based on the parameterized type (if it
+            // exists).
+            if (rhs instanceof JsonObject)
+            {
+                if (field.genericType instanceof ParameterizedType)
+                {   // Only JsonObject instances could contain unmarked objects.
+                    markUntypedObjects(field.genericType, rhs, MetaUtils.getDeepDeclaredFields(fieldType))
+                }
+
+                // Ensure .type field set on JsonObject
+                final JsonObject job = (JsonObject) rhs
+                final String type = job.type
+                if (type == null || type.isEmpty())
+                {
+                    job.type = fieldType.name
+                }
+            }
+
+            Object special
+            if (rhs == JsonParser.EMPTY_OBJECT)
+            {
+                final JsonObject jObj = new JsonObject()
+                jObj.type = fieldType.name
+                Object value = createGroovyObjectInstance(fieldType, jObj)
+                field.set(target, value)
+            }
+            else if ((special = readIfMatching(rhs, fieldType, stack)) != null)
+            {
+                field.set(target, special)
+            }
+            else if (rhs.getClass().isArray())
+            {    // LHS of assignment is an [] field or RHS is an array and LHS is Object
+                final Object[] elements = (Object[]) rhs
+                JsonObject<String, Object> jsonArray = new JsonObject<>()
+                if (([] as char[]).class == fieldType)
+                {   // Specially handle char[] because we are writing these
+                    // out as UTF8 strings for compactness and speed.
+                    if (elements.length == 0)
+                    {
+                        field.set(target, [] as char[])
+                    }
+                    else
+                    {
+                        field.set(target, ((String) elements[0]).toCharArray())
+                    }
+                }
+                else
+                {
+                    jsonArray['@items'] = elements
+                    createGroovyObjectInstance(fieldType, jsonArray)
+                    field.set(target, jsonArray.target)
+                    stack.addFirst(jsonArray)
+                }
+            }
+            else if (rhs instanceof JsonObject)
+            {
+                final JsonObject<String, Object> jObj = (JsonObject) rhs
+                final Long ref = (Long) jObj['@ref']
+
+                if (ref != null)
+                {    // Correct field references
+                    final JsonObject refObject = getReferencedObj(ref)
+
+                    if (refObject.target != null)
+                    {
+                        field.set(target, refObject.target)
+                    }
+                    else
+                    {
+                        unresolvedRefs.add(new UnresolvedReference(jsonObj, field.name, ref))
+                    }
+                }
+                else
+                {    // Assign ObjectMap's to Object (or derived) fields
+                    field.set(target, createGroovyObjectInstance(fieldType, jObj))
+                    if (!MetaUtils.isLogicalPrimitive(jObj.getTargetClass()))
+                    {
+                        stack.addFirst((JsonObject) rhs)
+                    }
+                }
+            }
+            else
+            {
+                if (MetaUtils.isPrimitive(fieldType))
+                {
+                    field.set(target, MetaUtils.newPrimitiveWrapper(fieldType, rhs))
+                }
+                else if (rhs instanceof String && "".equals(((String) rhs).trim()) && fieldType != String.class)
+                {   // Allow "" to null out a non-String field
+                    field.set(target, null)
+                }
+                else
+                {
+                    field.set(target, rhs)
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            error(e.getClass().simpleName + " setting field '" + field.name + "' on target: " + safeToString(target) + " with value: " + rhs, e)
+        }
+    }
+
+    private static String safeToString(Object o)
+    {
+        if (o == null)
+        {
+            return 'null'
+        }
+        try
+        {
+            return o.toString()
+        }
+        catch (Exception e)
+        {
+            return o.getClass().toString()
+        }
+    }
+
+    /**
+     * Process java.util.Collection and it's derivatives.  Collections are written specially
+     * so that the serialization does not expose the Collection's internal structure, for
+     * example, a TreeSet.  All entries are processed, except unresolved references, which
+     * are filled in later.  For an indexable collection, the unresolved references are set
+     * back into the proper element location.  For non-indexable collections (Sets), the
+     * unresolved references are added via .add().
+     * @param jsonObj a Map-of-Map representation of the JSON input stream.
+     * @throws IOException for stream errors or parsing errors.
+     */
+    protected void traverseCollection(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj) throws IOException
+    {
+        final Object[] items = jsonObj.getArray()
+        if (items == null || items.length == 0)
+        {
+            return
+        }
+        final Collection col = (Collection) jsonObj.target
+        final boolean isList = col instanceof List
+        int idx = 0
+
+        for (final Object element : items)
+        {
+            Object special
+            if (element == null)
+            {
+                col.add(null)
+            }
+            else if (element == JsonParser.EMPTY_OBJECT)
+            {   // Handles {}
+                col.add(new JsonObject())
+            }
+            else if ((special = readIfMatching(element, null, stack)) != null)
+            {
+                col.add(special)
+            }
+            else if (element instanceof String || element instanceof Boolean || element instanceof Double || element instanceof Long)
+            {    // Allow Strings, Booleans, Longs, and Doubles to be "inline" without Java object decoration (@id, @type, etc.)
+                col.add(element)
+            }
+            else if (element.getClass().isArray())
+            {
+                final JsonObject jObj = new JsonObject()
+                jObj['@items'] = element
+                createGroovyObjectInstance(Object.class, jObj)
+                col.add(jObj.target)
+                convertMapsToObjects(jObj)
+            }
+            else // if (element instanceof JsonObject)
+            {
+                final JsonObject jObj = (JsonObject) element
+                final Long ref = (Long) jObj['@ref']
+
+                if (ref != null)
+                {
+                    JsonObject refObject = getReferencedObj(ref)
+
+                    if (refObject.target != null)
+                    {
+                        col.add(refObject.target)
+                    }
+                    else
+                    {
+                        unresolvedRefs.add(new UnresolvedReference(jsonObj, idx, ref))
+                        if (isList)
+                        {   // Indexable collection, so set 'null' as element for now - will be patched in later.
+                            col.add(null)
+                        }
+                    }
+                }
+                else
+                {
+                    createGroovyObjectInstance(Object.class, jObj)
+
+                    if (!MetaUtils.isLogicalPrimitive(jObj.targetClass))
+                    {
+                        convertMapsToObjects(jObj)
+                    }
+                    col.add(jObj.target)
+                }
+            }
+            idx++
+        }
+
+        jsonObj.remove("@items")   // Reduce memory required during processing
+    }
+
+    /**
+     * Traverse the JsonObject associated to an array (of any type).  Convert and
+     * assign the list of items in the JsonObject (stored in the @items field)
+     * to each array element.  All array elements are processed excluding elements
+     * that reference an unresolved object.  These are filled in later.
+     *
+     * @param stack   a Stack (Deque) used to support graph traversal.
+     * @param jsonObj a Map-of-Map representation of the JSON input stream.
+     * @throws java.io.IOException for stream errors or parsing errors.
+     */
+    protected void traverseArray(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj) throws IOException
+    {
+        final int len = jsonObj.getLength()
+        if (len == 0)
+        {
+            return
+        }
+
+        final Class compType = jsonObj.getComponentType()
+
+        if (char.class == compType)
+        {
+            return
+        }
+
+        if (byte.class == compType)
+        {   // Handle byte[] special for performance boost.
+            jsonObj.moveBytesToMate()
+            jsonObj.clearArray()
+            return
+        }
+
+        final boolean isPrimitive = MetaUtils.isPrimitive(compType)
+        final Object array = jsonObj.target
+        final Object[] items =  jsonObj.getArray()
+
+        for (int i=0; i < len; i++)
+        {
+            final Object element = items[i]
+
+            Object special
+            if (element == null)
+            {
+                Array.set(array, i, null)
+            }
+            else if (element == JsonParser.EMPTY_OBJECT)
+            {    // Use either explicitly defined type in ObjectMap associated to JSON, or array component type.
+                Object arrayElement = createGroovyObjectInstance(compType, new JsonObject())
+                Array.set(array, i, arrayElement)
+            }
+            else if ((special = readIfMatching(element, compType, stack)) != null)
+            {
+                Array.set(array, i, special)
+            }
+            else if (isPrimitive)
+            {   // Primitive component type array
+                Array.set(array, i, MetaUtils.newPrimitiveWrapper(compType, element))
+            }
+            else if (element.getClass().isArray())
+            {   // Array of arrays
+                if (([] as char[]).class == compType)
+                {   // Specially handle char[] because we are writing these
+                    // out as UTF-8 strings for compactness and speed.
+                    Object[] jsonArray = (Object[]) element
+                    if (jsonArray.length == 0)
+                    {
+                        Array.set(array, i, [] as char[])
+                    }
+                    else
+                    {
+                        final String value = (String) jsonArray[0]
+                        final int numChars = value.length()
+                        final char[] chars = new char[numChars]
+                        for (int j = 0; j < numChars; j++)
+                        {
+                            chars[j] = value.charAt(j)
+                        }
+                        Array.set(array, i, chars)
+                    }
+                }
+                else
+                {
+                    JsonObject<String, Object> jsonObject = new JsonObject<>()
+                    jsonObject['@items'] = element
+                    Array.set(array, i, createGroovyObjectInstance(compType, jsonObject))
+                    stack.addFirst(jsonObject)
+                }
+            }
+            else if (element instanceof JsonObject)
+            {
+                JsonObject<String, Object> jsonObject = (JsonObject<String, Object>) element
+                Long ref = (Long) jsonObject['@ref']
+
+                if (ref != null)
+                {    // Connect reference
+                    JsonObject refObject = getReferencedObj(ref)
+                    if (refObject.target != null)
+                    {   // Array element with @ref to existing object
+                        Array.set(array, i, refObject.target)
+                    }
+                    else
+                    {    // Array with a forward @ref as an element
+                        unresolvedRefs.add(new UnresolvedReference(jsonObj, i, ref))
+                    }
+                }
+                else
+                {    // Convert JSON HashMap to Java Object instance and assign values
+                    Object arrayElement = createGroovyObjectInstance(compType, jsonObject)
+                    Array.set(array, i, arrayElement)
+                    if (!MetaUtils.isLogicalPrimitive(arrayElement.getClass()))
+                    {    // Skip walking primitives, primitive wrapper classes, Strings, and Classes
+                        stack.addFirst(jsonObject)
+                    }
+                }
+            }
+            else
+            {
+                if (element instanceof String && "".equals(((String) element).trim()) && compType != String.class && compType != Object.class)
+                {   // Allow an entry of "" in the array to set the array element to null, *if* the array type is NOT String[] and NOT Object[]
+                    Array.set(array, i, null)
+                }
+                else
+                {
+                    Array.set(array, i, element)
+                }
+            }
+        }
+        jsonObj.clearArray()
+    }
+
+    protected static Object readIfMatching(final Object o, final Class compType, final Deque<JsonObject<String, Object>> stack) throws IOException
+    {
+        if (o == null)
+        {
+            error("Bug in json-io, null must be checked before calling this method.")
+        }
+
+        if (notCustom(o.getClass()))
+        {
+            return null
+        }
+
+        if (compType != null)
+        {
+            if (notCustom(compType))
+            {
+                return null
+            }
+        }
+
+        final boolean isJsonObject = o instanceof JsonObject
+        if (!isJsonObject && compType == null)
+        {   // If not a JsonObject (like a Long that represents a date, then compType must be set)
+            return null
+        }
+
+        Class c
+        boolean needsType = false
+
+        // Set up class type to check against reader classes (specified as @type, or jObj.target, or compType)
+        if (isJsonObject)
+        {
+            JsonObject jObj = (JsonObject) o
+            if (jObj.containsKey("@ref"))
+            {
+                return null
+            }
+
+            if (jObj.target == null)
+            {   // '@type' parameter used
+                String typeStr = null
+                try
+                {
+                    Object type =  jObj.type
+                    if (type != null)
+                    {
+                        typeStr = (String) type
+                        c = MetaUtils.classForName((String) type)
+                    }
+                    else
+                    {
+                        if (compType != null)
+                        {
+                            c = compType
+                            needsType = true
+                        }
+                        else
+                        {
+                            return null
+                        }
+                    }
+                }
+                catch(Exception e)
+                {
+                    return error("Class listed in @type [" + typeStr + "] is not found", e)
+                }
+            }
+            else
+            {   // Type inferred from target object
+                c = jObj.target.getClass()
+            }
+        }
+        else
+        {
+            c = compType
+        }
+
+        JsonTypeReader closestReader = getCustomReader(c)
+
+        if (closestReader == null)
+        {
+            return null
+        }
+
+        if (needsType && isJsonObject)
+        {
+            ((JsonObject)o).type = c.getName()
+        }
+        return closestReader.read(o, stack)
+    }
+
+    private static void markUntypedObjects(final Type type, final Object rhs, final Map<String, Field> classFields)
+    {
+        final Deque<Object[]> stack = new ArrayDeque<>()
+        stack.addFirst([type, rhs] as Object[])
+
+        while (!stack.isEmpty())
+        {
+            Object[] item = stack.removeFirst()
+            final Type t = (Type) item[0]
+            final Object instance = item[1]
+            if (t instanceof ParameterizedType)
+            {
+                final Class clazz = getRawType(t)
+                final ParameterizedType pType = (ParameterizedType)t
+                final Type[] typeArgs = pType.actualTypeArguments
+
+                if (typeArgs == null || typeArgs.length < 1 || clazz == null)
+                {
+                    continue
+                }
+
+                stampTypeOnJsonObject(instance, t)
+
+                if (Map.class.isAssignableFrom(clazz))
+                {
+                    Map map = (Map) instance
+                    if (!map.containsKey("@keys") && !map.containsKey("@items") && map instanceof JsonObject)
+                    {   // Maps created in Javascript will come over without @keys / @items.
+                        convertMapToKeysItems((JsonObject) map)
+                    }
+
+                    Object[] keys = (Object[])map['@keys']
+                    getTemplateTraverseWorkItem(stack, keys, typeArgs[0])
+
+                    Object[] items = (Object[])map['@items']
+                    getTemplateTraverseWorkItem(stack, items, typeArgs[1])
+                }
+                else if (Collection.class.isAssignableFrom(clazz))
+                {
+                    if (instance instanceof Object[])
+                    {
+                        Object[] array = (Object[]) instance
+                        for (int i=0; i < array.length; i++)
+                        {
+                            Object vals = array[i]
+                            stack.addFirst([t, vals] as Object[])
+
+                            if (vals instanceof JsonObject)
+                            {
+                                stack.addFirst([t, vals] as Object[])
+                            }
+                            else if (vals instanceof Object[])
+                            {
+                                JsonObject coll = new JsonObject()
+                                coll.type = clazz.getName()
+                                List items = Arrays.asList((Object[]) vals)
+                                coll['@items'] = items.toArray()
+                                stack.addFirst([t, items] as Object[])
+                                array[i] = coll
+                            }
+                            else
+                            {
+                                stack.addFirst([t, vals] as Object[])
+                            }
+                        }
+                    }
+                    else if (instance instanceof Collection)
+                    {
+                        final Collection col = (Collection)instance
+                        for (Object o : col)
+                        {
+                            stack.addFirst([typeArgs[0], o] as Object[])
+                        }
+                    }
+                    else if (instance instanceof JsonObject)
+                    {
+                        final JsonObject jObj = (JsonObject) instance
+                        final Object[] array = jObj.getArray()
+                        if (array != null)
+                        {
+                            for (Object o : array)
+                            {
+                                stack.addFirst([typeArgs[0], o] as Object[])
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (instance instanceof JsonObject)
+                    {
+                        final JsonObject<String, Object> jObj = (JsonObject) instance
+
+                        for (Map.Entry<String, Object> entry : jObj.entrySet())
+                        {
+                            final String fieldName = entry.key
+                            if (!fieldName.startsWith('this$'))
+                            {
+                                // TODO: If more than one type, need to associate correct typeArgs entry to value
+                                Field field = classFields[fieldName]
+
+                                if (field != null && (field.type.typeParameters.length > 0 || field.genericType instanceof TypeVariable))
+                                {
+                                    stack.addFirst([typeArgs[0], entry.value] as Object[])
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                stampTypeOnJsonObject(instance, t)
+            }
+        }
+    }
+
+    private static void getTemplateTraverseWorkItem(final Deque<Object[]> stack, final Object[] items, final Type type)
+    {
+        if (items == null || items.length < 1)
+        {
+            return
+        }
+        Class rawType = getRawType(type)
+        if (rawType != null && Collection.class.isAssignableFrom(rawType))
+        {
+            stack.add([type, items] as Object[])
+        }
+        else
+        {
+            for (Object o : items)
+            {
+                stack.add([type, o] as Object[])
+            }
+        }
+    }
+
+    // Mark 'type' on JsonObject when the type is missing and it is a 'leaf'
+    // node (no further subtypes in it's parameterized type definition)
+    private static void stampTypeOnJsonObject(final Object o, final Type t)
+    {
+        Class clazz = t instanceof Class ? (Class)t : getRawType(t)
+
+        if (o instanceof JsonObject && clazz != null)
+        {
+            JsonObject jObj = (JsonObject) o
+            if ((jObj.type == null || jObj.type.isEmpty()) && jObj.target == null)
+            {
+                jObj.type = clazz.getName()
+            }
+        }
+    }
+
+    public static Class getRawType(final Type t)
+    {
+        if (t instanceof ParameterizedType)
+        {
+            ParameterizedType pType = ((ParameterizedType) t)
+
+            if (pType.rawType instanceof Class)
+            {
+                return (Class) pType.rawType
+            }
+        }
+        return null
+    }
 }
