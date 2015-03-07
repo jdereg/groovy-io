@@ -6,7 +6,7 @@ Perfect [Groovy](http://groovy.codehaus.org/) serialization to and from JSON for
 <dependency>
   <groupId>com.cedarsoftware</groupId>
   <artifactId>groovy-io</artifactId>
-  <version>1.0.4</version>
+  <version>1.0.5</version>
 </dependency>
 ```
 [Donations welcome](https://coinbase.com/jdereg)
@@ -119,13 +119,13 @@ See https://github.com/jdereg/json-command-servlet for a light-weight servlet th
 
 Featured on http://json.org.
  * 1.0.5
-   * Performance improvement: caching the reader associated to a given class.
+   * Performance improvement: caching the custom reader / writers associated to given classes.
    * Ease of use: `json-io` throws a `JsonIoException` (unchecked) instead of checked exception `IOException`.  This allows more flexibility in terms of error handling for the user.
    * Code cleanup: Moved reflection related code from `JsonReader` into separate `MetaUtils` class.
    * Code cleanup: Moved `FastPushbackReader` from `JsonReader` into separate class.
    * Code cleanup: Moved JSON parsing code from `JsonReader` into separate `JsonParser` class.
    * Code cleanup: Moved built-in readers from `JsonReader` to separate `Readers` class.
-   * Code cleanup: Moved resolver code (marshals map of maps to Java instances) into separate `Resolver` classes.
+   * Code cleanup: Moved resolver code (code that marshals map of maps to Java instances) into separate `Resolver` classes.
  * 1.0.4
    * `GroovyJsonReader.newInstance()` API made public
    * Bumped version of junit from 4.11 to 4.12
