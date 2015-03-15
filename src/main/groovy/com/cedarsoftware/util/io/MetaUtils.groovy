@@ -5,6 +5,7 @@ import groovy.transform.CompileStatic
 import java.lang.reflect.Array
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.sql.Timestamp
@@ -768,10 +769,10 @@ class MetaUtils
             try
             {
                 Constructor<Unsafe> unsafeConstructor = classForName("sun.misc.Unsafe").getDeclaredConstructor()
-                unsafeConstructor.setAccessible(true)
+                unsafeConstructor.accessible = true
                 sunUnsafe = unsafeConstructor.newInstance()
                 allocateInstance = sunUnsafe.getClass().getMethod("allocateInstance", Class.class)
-                allocateInstance.setAccessible(true)
+                allocateInstance.accessible = true
             }
             catch(Exception e)
             {
@@ -791,10 +792,15 @@ class MetaUtils
             {
                 return allocateInstance.invoke(sunUnsafe, clazz)
             }
-            catch (Exception e)
+            catch (IllegalAccessException | IllegalArgumentException e)
             {
-                String name = clazz ?: clazz.getName()
-                throw new JsonIoException('Unable to create instance of class: ' + name, e)
+                String name = clazz.getName() ?: "null"
+                throw new JsonIoException('Unable to create instance of class: ' + name, e);
+            }
+            catch (InvocationTargetException e)
+            {
+                String name = clazz.getName() ?: "null"
+                throw new JsonIoException('Unable to create instance of class: ' + name, e.cause ?: e);
             }
         }
     }
