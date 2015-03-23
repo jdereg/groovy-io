@@ -177,7 +177,7 @@ class MapResolver extends Resolver
                 if (ref != null)
                 {    // connect reference
                     JsonObject refObject = getReferencedObj(ref)
-                    copy.set(idx, refObject)
+                    copy[idx] = refObject
                 }
                 else
                 {

@@ -458,7 +458,7 @@ abstract class Resolver
                 if (objToFix instanceof List)
                 {   // Patch up Indexable Collections
                     List list = (List) objToFix
-                    list.set(ref.index, objReferenced.target)
+                    list[ref.index] = objReferenced.target
                 }
                 else if (objToFix instanceof Collection)
                 {   // Add element (since it was not indexable, add it to collection)
