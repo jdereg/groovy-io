@@ -544,7 +544,12 @@ class ObjectResolver extends Resolver
         {
             ((JsonObject)o).type = c.getName()
         }
-        return closestReader.read(o, stack)
+        Object read = closestReader.read(o, stack);
+        if (isJsonObject)
+        {
+            ((JsonObject)o).target = read;
+        }
+        return read;
     }
 
     private static void markUntypedObjects(final Type type, final Object rhs, final Map<String, Field> classFields)
