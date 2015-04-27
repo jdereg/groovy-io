@@ -45,8 +45,8 @@
         <version.plugin.gpg>1.5</version.plugin.gpg>
         <version.plugin.release>2.5.1</version.plugin.release>
         <version.plugin.surefire>2.18.1</version.plugin.surefire>
-        <version.plugin.groovy.eclipse.compiler>2.9.1-01</version.plugin.groovy.eclipse.compiler>
-        <version.plugin.groovy.eclipse.batch>2.3.7-01</version.plugin.groovy.eclipse.batch>
+        <version.plugin.groovy.eclipse.compiler>2.9.2-01</version.plugin.groovy.eclipse.compiler>
+        <version.plugin.groovy.eclipse.batch>2.4.3-01</version.plugin.groovy.eclipse.batch>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
