@@ -6,7 +6,7 @@ Perfect [Groovy](http://groovy.codehaus.org/) serialization to and from JSON for
 <dependency>
   <groupId>com.cedarsoftware</groupId>
   <artifactId>groovy-io</artifactId>
-  <version>1.0.6</version>
+  <version>1.1.0</version>
 </dependency>
 ```
 [Donations welcome](https://coinbase.com/jdereg)
@@ -77,16 +77,56 @@ This will return an untyped object representation of the JSON String as a `Map` 
 
 This 'Maps' representation can be re-written to a JSON String or Stream and _the output JSON will be equivalent to the original input JSON stream_.  This permits a JVM receiving JSON strings / streams that contain class references which do not exist in the JVM that is parsing the JSON, to completely read / write the stream.  Additionally, the Maps can be modified before being written, and the entire graph can be re-written in one collective write.  _Any object model can be read, modified, and then re-written by a JVM that does not contain any of the classes in the JSON data!_
 
+### Optional Arguments (Features)
+
+Both the `GroovyJsonWriter` and `GroovyJsonReader` allow you to pass in an optional arguments `Map<String, Object>`.  This `Map` has well known keys (constants from `GroovyJsonWriter` / `GroovyJsonWriter`).  To enable the respective feature, first create a `Map`.  Then place the well known key in the `Map` and associate the appropriate setting as the value.  Below is a complete list of features and some example usages.  Shown in Groovy for brevity.
+
+    Map args = [
+            (GroovyJsonWriter.SHORT_META_KEYS):true,
+            (GroovyJsonWriter.TYPE_NAME_MAP):[
+                'java.util.ArrayList':'alist', 
+                'java.util.LinkedHashMap':'lmap', 
+                (TestObject.class.getName()):'testO'
+            ]
+    ]
+    String json = GroovyJsonWriter.objectToJson(list, args)
+        
+In this example, we create an 'args' `Map`, set the key `GroovyJsonWriter.SHORT_META_KEYS` to `true` and set the `GroovyJsonWriter.TYPE_NAME_MAP` to a `Map` that will be used to substitute class names for short-hand names.         
+
+#### All of the values below are public constants from `GroovyJsonWriter`, used by placing them as keys in the arguments map.
+
+    DATE_FORMAT             // Set this format string to control the format dates are 
+                            // written. Example: "yyyy/MM/dd HH:mm".  Can also be a 
+                            // DateFormat instance.  Can also be the constant 
+                            // JsonWriter.ISO_DATE_FORMAT or 
+                            // JsonWriter.ISO_DATE_TIME_FORMAT 
+    TYPE                    // Set to boolean true to force all data types to be 
+                            // output, even where they could have been omitted.
+    PRETTY_PRINT            // Force nicely formatted JSON output 
+                            // (See http://jsoneditoronline.org for example format)
+    FIELD_SPECIFIERS        // Set to a Map<Class, List<String>> which is used to 
+                            // control which fields of a class are output. 
+    ENUM_PUBLIC_ONLY        // If set, indicates that private variables of ENUMs are not 
+                            // serialized.
+    WRITE_LONGS_AS_STRINGS  // If set, longs are written in quotes (Javascript safe).
+                            // JsonReader will automatically convert Strings back
+                            // to longs.  Any Number can be set from a String.
+    TYPE_NAME_MAP           // If set, this map will be used when writing @type values.
+                            // Allows short-hand abbreviations for type names.
+    SHORT_META_KEYS         // If set, then @type => @t, @keys => @k, @items => @e,
+                            // @ref => @r, and @id => @i 
+
+#### All of the values below are public constants from `GroovyJsonReader`, used by placing them as keys in the arguments map.
+
+    USE_MAPS        // If set to boolean true, the read-in JSON will be 
+                    // turned into a Map of Maps (JsonObject) representation. Note
+                    // that calling the JsonWriter on this root Map will indeed
+                    // write the equivalent JSON stream as was read.
+    TYPE_NAME_MAP   // If set, this map will be used when writing @type values. 
+                    // Allows short-hand abbreviations of type names.
+      
 ### Customization
 New APIs have been added to allow you to associate a custom reader / writer class to a particular class if you want it to be read / written specially in the JSON output.  This approach allows you to customize the JSON format for classes for which you do not have the source code.
-
-#### Dates
-To specify an alternative date format for `GroovyJsonWriter`:
-
-    Map args = [(GroovyJsonWriter.DATE_FORMAT):GroovyJsonWriter.ISO_DATE_TIME]
-    String json = GroovyJsonWriter.objectToJson(root, args)
-
-In this example, the ISO `yyyy/MM/ddTHH:mm:ss` format is used to format dates in the JSON output. The 'value' associated to the 'DATE_FORMAT' key can be `GroovyJsonWriter.ISO_DATE_TIME`, `GroovyJsonWriter.ISO_DATE`, a date format String pattern (eg. `yyyy/MM/dd HH:mm`), or a `java.text.Format` instance.
 
 ### Javascript
 Included is a small Javascript utility that will take a JSON output stream created by the JSON writer and substitute all `@ref's` for the actual pointed to object.  It's a one-line call - `resolveRefs(json)`.  This will substitute `@ref` tags in the JSON for the actual pointed-to object.  In addition, the `@keys` / `@items` will also be converted into Javascript Maps and Arrays.  Finally, there is a Javascript API that will convert a full Javascript object graph to JSON, (even if it has cycles within the graph).  This will maintain the proper graph-shape when sending it from the client back to the server.
@@ -118,6 +158,9 @@ Use `GroovyJsonWriter.formatJson()` API to format a passed in JSON string to a n
 See https://github.com/jdereg/json-command-servlet for a light-weight servlet that processes Ajax / XHR calls.
 
 Featured on http://json.org.
+ * 1.1.0
+  * **New Feature**: Short class names to reduce the size of the output JSON. This allows you to, for example, substitute `java.util.HashMap` with `hmap` so that it will appear in the JSON as `"@type":"hmap"`.  Pass the substitution map to the `GroovyJsonWriter` (or reader) as an entry in the args `Map` with the key of `GroovyJsonWriter.TYPE_NAME_MAP` and the value as a `Map` instance with String class names as the keys and short-names as the values. The same map can be passed to the `GroovyJsonReader` and it will properly read the substituted types.
+  * **New Feature**: Short meta-key names to reduce the size of the output JSON.  The `@type` key name will be shortened to `@t`, `@id` => `@i`, `@ref` => `@r`, `@keys` => `@k`, `@items` => `@e`.  Put a key in the `args` `Map` as `GroovyJsonWriter.SHORT_META_KEYS` with the value `true`.   
  * 1.0.7
   * Bug fix: Using a CustomReader in a Collection with at least two identical elements causes an exception (submitted by @KaiHufenbach).    
  * 1.0.6
