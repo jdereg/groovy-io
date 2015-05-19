@@ -86,12 +86,14 @@ class JsonParser
     private final StringBuilder hexBuf = new StringBuilder()
     private final char[] numBuf = new char[256]
     private final boolean useMaps
+    private final Map<String, String> typeNameMap
 
-    JsonParser(FastPushbackReader reader, Map<Long, JsonObject> objectsMap, boolean useMaps)
+    JsonParser(FastPushbackReader reader, Map<Long, JsonObject> objectsMap, Map<String, Object> args)
     {
         input = reader
         objsRead = objectsMap
-        this.useMaps = useMaps
+        useMaps = Boolean.TRUE.equals(args.get(GroovyJsonReader.USE_MAPS))
+        typeNameMap = (Map<String, String>) args.get(GroovyJsonReader.TYPE_NAME_MAP_REVERSE)
     }
 
     private Object readJsonObject()
@@ -138,6 +140,18 @@ class JsonParser
                             error("Expected ':' between string field and value")
                         }
                         skipWhitespace()
+
+                        if (field.startsWith('@'))
+                        {   // Expand short-hand meta keys
+                            switch(field)
+                            {
+                                case '@t': field = stringCache['@type']
+                                case '@i': field = stringCache['@id']
+                                case '@r': field = stringCache['@ref']
+                                case '@k': field = stringCache['@keys']
+                                case '@e': field = stringCache['@items']
+                            }
+                        }
                         state = STATE_READ_VALUE
                     }
                     else
@@ -154,6 +168,14 @@ class JsonParser
                     }
 
                     Object value = readValue(object)
+                    if ("@type".equals(field) && typeNameMap != null)
+                    {
+                        final String substitute = typeNameMap.get(value)
+                        if (substitute != null)
+                        {
+                            value = substitute
+                        }
+                    }
                     object[(field)] = value
 
                     // If object is referenced (has @id), then put it in the _objsRead table.
