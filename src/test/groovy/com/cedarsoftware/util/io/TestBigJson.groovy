@@ -36,4 +36,14 @@ class TestBigJson
         assertNotNull(map.axes)
         assertNotNull(map.cells)
     }
+
+    @Test
+    void testReadVeryLargeJson()
+    {
+        String json = TestUtil.fetchResource('veryLarge.json')
+        long start = System.nanoTime()
+        GroovyJsonReader.jsonToMaps(json)
+        long stop = System.nanoTime()
+        println ((stop - start) / 1000000L)
+    }
 }

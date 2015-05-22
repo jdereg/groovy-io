@@ -40,6 +40,7 @@ abstract class Resolver
     private final Collection<Object[]> prettyMaps = []
     private final Map<Long, JsonObject> objsRead
     private final boolean useMaps
+    private final Object unknownClass;
 
     /**
      * UnresolvedReference is created to hold a logical pointer to a reference that
@@ -81,10 +82,11 @@ abstract class Resolver
         }
     }
 
-    protected Resolver(Map<Long, JsonObject> objsRead, boolean useMaps)
+    protected Resolver(Map<Long, JsonObject> objsRead, Map<String, Object> args)
     {
         this.objsRead = objsRead
-        this.useMaps = useMaps
+        useMaps = Boolean.TRUE.equals(args.get(GroovyJsonReader.USE_MAPS));
+        unknownClass = args.containsKey(GroovyJsonReader.UNKNOWN_OBJECT) ? args.get(GroovyJsonReader.UNKNOWN_OBJECT) : null;
     }
 
     /**
@@ -340,13 +342,18 @@ abstract class Resolver
             }
             else if (clazz == Object.class && !useMapsLocal)
             {
-                if (jsonObj.isMap() || jsonObj.size() > 0)
+                if (unknownClass == null)
                 {
-                    mate = new JsonObject()
+                    mate = new JsonObject();
+                    ((JsonObject)mate).type = Map.class.getName();
+                }
+                else if (unknownClass instanceof String)
+                {
+                    mate = newInstance(MetaUtils.classForName(((String)unknownClass).trim()));
                 }
                 else
-                {   // Dunno
-                    mate = newInstance(clazz)
+                {
+                    throw new JsonIoException("Unable to determine object type at column: " + jsonObj.col + ", line: " + jsonObj.line + ", content: " + jsonObj);
                 }
             }
             else

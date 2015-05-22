@@ -124,7 +124,13 @@ In this example, we create an 'args' `Map`, set the key `GroovyJsonWriter.SHORT_
                     // write the equivalent JSON stream as was read.
     TYPE_NAME_MAP   // If set, this map will be used when writing @type values. 
                     // Allows short-hand abbreviations of type names.
-      
+    UNKNOWN_TYPE    // Set to null (or leave out), unknown objects are returned as Maps.
+                    // Set to String class name, and unknown objects will be created
+                    // as with this class name, and the fields will be set on it.
+                    // Set to false, and an exception will be thrown when an unknown
+                    // object type is encountered.  The location in the JSON will
+                    // be given.
+
 ### Customization
 New APIs have been added to allow you to associate a custom reader / writer class to a particular class if you want it to be read / written specially in the JSON output.  This approach allows you to customize the JSON format for classes for which you do not have the source code.
 
@@ -159,6 +165,7 @@ See https://github.com/jdereg/json-command-servlet for a light-weight servlet th
 
 Featured on http://json.org.
  * 1.1.0
+  * `GroovyJsonReader.UNKNOWN_OBJECT` added as an option to indicate what to do when an unknown object is encountered in the JSON.  Default is a `Map` will be created.  However, you can set this argument to a `String` class name to instantiate, or set it to false to force an exception to be thrown.
   * **New Feature**: Short class names to reduce the size of the output JSON. This allows you to, for example, substitute `java.util.HashMap` with `hmap` so that it will appear in the JSON as `"@type":"hmap"`.  Pass the substitution map to the `GroovyJsonWriter` (or reader) as an entry in the args `Map` with the key of `GroovyJsonWriter.TYPE_NAME_MAP` and the value as a `Map` instance with String class names as the keys and short-names as the values. The same map can be passed to the `GroovyJsonReader` and it will properly read the substituted types.
   * **New Feature**: Short meta-key names to reduce the size of the output JSON.  The `@type` key name will be shortened to `@t`, `@id` => `@i`, `@ref` => `@r`, `@keys` => `@k`, `@items` => `@e`.  Put a key in the `args` `Map` as `GroovyJsonWriter.SHORT_META_KEYS` with the value `true`.   
  * 1.0.7

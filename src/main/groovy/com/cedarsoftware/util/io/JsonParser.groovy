@@ -146,10 +146,15 @@ class JsonParser
                             switch(field)
                             {
                                 case '@t': field = stringCache['@type']
+                                    break
                                 case '@i': field = stringCache['@id']
+                                    break
                                 case '@r': field = stringCache['@ref']
+                                    break
                                 case '@k': field = stringCache['@keys']
+                                    break
                                 case '@e': field = stringCache['@items']
+                                    break
                             }
                         }
                         state = STATE_READ_VALUE
@@ -170,13 +175,13 @@ class JsonParser
                     Object value = readValue(object)
                     if ("@type".equals(field) && typeNameMap != null)
                     {
-                        final String substitute = typeNameMap.get(value)
+                        final String substitute = typeNameMap[value]
                         if (substitute != null)
                         {
                             value = substitute
                         }
                     }
-                    object[(field)] = value
+                    object[field] = value
 
                     // If object is referenced (has @id), then put it in the _objsRead table.
                     if ("@id".equals(field))

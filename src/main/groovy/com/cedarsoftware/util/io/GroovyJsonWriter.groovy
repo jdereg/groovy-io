@@ -56,11 +56,13 @@ class GroovyJsonWriter implements Closeable, Flushable
     static final String DATE_FORMAT = "DATE_FORMAT"         // Set the date format to use within the JSON output
     static final String ISO_DATE_FORMAT = "yyyy-MM-dd"      // Constant for use as DATE_FORMAT value
     static final String ISO_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss"  // Constant for use as DATE_FORMAT value
+    static final String TYPE_NAME_MAP = "TYPE_NAME_MAP"     // If set, this map will be used when writing @type values - allows short-hand abbreviations type names
+    static final String SHORT_META_KEYS = "SHORT_META_KEYS" // If set, then @type -> @t, @keys -> @k, @items -> @i
     static final String TYPE = "TYPE"                       // Force @type always
     static final String PRETTY_PRINT = "PRETTY_PRINT"       // Force nicely formatted JSON output
     static final String FIELD_SPECIFIERS = "FIELD_SPECIFIERS"   // Set value to a Map<Class, List<String>> which will be used to control which fields on a class are output
     static final String ENUM_PUBLIC_ONLY = "ENUM_PUBLIC_ONLY" // If set, indicates that private variables of ENUMs are not to be serialized
-    static final String WRITE_LONGS_AS_STRINGS = "WLAS";    // If set, longs are written in quotes (Javascript safe)
+    static final String WRITE_LONGS_AS_STRINGS = "WLAS"    // If set, longs are written in quotes (Javascript safe)
     private static final Map<Class, JsonTypeWriter> writers = [
             (String.class):new Writers.JsonStringWriter(),
             (Date.class):new Writers.DateWriter(),
@@ -84,6 +86,8 @@ class GroovyJsonWriter implements Closeable, Flushable
     private final Map<Object, Long> objVisited = new IdentityHashMap<>()
     private final Map<Object, Long> objsReferenced = new IdentityHashMap<>()
     private final Writer out
+    private Map<String, String> typeNameMap = null;
+    private boolean shortMetaKeys = false;
     long identity = 1
     private int depth = 0
     // _args is using ThreadLocal so that static inner classes can have access to them
@@ -133,6 +137,25 @@ class GroovyJsonWriter implements Closeable, Flushable
     protected Map getObjectsVisited()
     {
         return objVisited
+    }
+
+    protected String getSubstituteTypeNameIfExists(String typeName)
+    {
+        if (typeNameMap == null)
+        {
+            return null
+        }
+        return typeNameMap[typeName]
+    }
+
+    protected String getSubstituteTypeName(String typeName)
+    {
+        if (typeNameMap == null)
+        {
+            return typeName
+        }
+        String shortName = typeNameMap[typeName]
+        return shortName == null ? typeName : shortName
     }
 
     /**
@@ -192,12 +215,10 @@ class GroovyJsonWriter implements Closeable, Flushable
         Map args = _args.get()
         args.clear()
         args.putAll(optionalArgs)
+        typeNameMap = (Map<String, String>) args[TYPE_NAME_MAP]
+        shortMetaKeys = Boolean.TRUE.equals(args[SHORT_META_KEYS])
 
-        if (!optionalArgs.containsKey(FIELD_SPECIFIERS))
-        {   // Ensure that at least an empty Map is in the FIELD_SPECIFIERS entry
-            args[FIELD_SPECIFIERS] = [:]
-        }
-        else
+        if (optionalArgs.containsKey(FIELD_SPECIFIERS))
         {   // Convert String field names to Groovy Field instances (makes it easier for user to set this up)
             Map<Class, List<String>> specifiers = (Map<Class, List<String>>) args[FIELD_SPECIFIERS]
             Map<Class, List<Field>> copy = [:]
@@ -221,6 +242,10 @@ class GroovyJsonWriter implements Closeable, Flushable
                 copy[clazz] = newList
             }
             args[FIELD_SPECIFIERS] = copy
+        }
+        else
+        {   // Ensure that at least an empty Map is in the FIELD_SPECIFIERS entry
+            args[FIELD_SPECIFIERS] = [:]
         }
 
         try
@@ -616,7 +641,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             {   // Test for null because of Weak/Soft references being gc'd during serialization.
                 return false
             }
-            output.write('{"@ref":')
+            output.write(shortMetaKeys ? '{"@r":' : '{"@ref":')
             output.write(id)
             output.write('}')
             return true
@@ -681,14 +706,24 @@ class GroovyJsonWriter implements Closeable, Flushable
 
     private void writeId(final String id)
     {
-        out.write('"@id":')
+        out.write(shortMetaKeys ? '"@i":' : '"@id":')
         out.write(id == null ? "0" : id)
     }
 
-    private static void writeType(Object obj, Writer output)
+    private void writeType(Object obj, Writer output)
     {
-        output.write('"@type":"')
+        output.write(shortMetaKeys ? '"@t":"' : '"@type":"')
         final Class c = obj.getClass()
+        String typeName = c.getName()
+        String shortName = getSubstituteTypeNameIfExists(typeName)
+
+        if (shortName != null)
+        {
+            output.write(shortName)
+            output.write('"')
+            return
+        }
+
         switch (c.getName())
         {
             case "java.lang.Boolean":
@@ -744,9 +779,11 @@ class GroovyJsonWriter implements Closeable, Flushable
             {
                 if (showType)
                 {
-                    out.write('{"@type":"long","value":"')
+                    out.write(shortMetaKeys ? '{"@t":"' : '{"@type":"')
+                    out.write(getSubstituteTypeName("long"))
+                    out.write('","value":"')
                     out.write(obj.toString())
-                    out.write("\"}")
+                    out.write('"}')
                 }
                 else
                 {
@@ -800,7 +837,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         {
             if (typeWritten || referenced)
             {
-                output.write('"@items":[]')
+                output.write(shortMetaKeys ? '"@e":[]' : '"@items":[]')
                 tabOut()
                 output.write('}')
             }
@@ -813,7 +850,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
         if (typeWritten || referenced)
         {
-            output.write('"@items":[')
+            output.write(shortMetaKeys ? '"@e":[' : '"@items":[')
         }
         else
         {
@@ -1094,7 +1131,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         {
             out.write(',')
             newLine()
-            out.write('"@items":[')
+            out.write(shortMetaKeys ? '"@e":[' : '"@items":[')
         }
         else
         {
@@ -1144,8 +1181,8 @@ class GroovyJsonWriter implements Closeable, Flushable
 
         if (typeWritten)
         {
-            output.write('"@type":"')
-            output.write(arrayClass.getName())
+            output.write(shortMetaKeys ? '"@t":"' : '"@type":"')
+            output.write(getSubstituteTypeName(arrayClass.getName()))
             output.write('",')
             newLine()
         }
@@ -1154,7 +1191,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         {
             if (typeWritten || referenced)
             {
-                output.write('"@items":[]')
+                output.write(shortMetaKeys ? '"@e":[]' : '"@items":[]')
                 tabOut()
                 output.write("}")
             }
@@ -1167,7 +1204,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
         if (typeWritten || referenced)
         {
-            output.write('"@items":[')
+            output.write(shortMetaKeys ? '"@e":[' : '"@items":[')
         }
         else
         {
@@ -1261,8 +1298,8 @@ class GroovyJsonWriter implements Closeable, Flushable
                 output.write(',')
                 newLine()
             }
-            output.write('"@type":"')
-            output.write(colClass.getName())
+            output.write(shortMetaKeys ? '"@t":"' : '"@type":"')
+            output.write(getSubstituteTypeName(colClass.getName()))
             output.write('"')
         }
 
@@ -1326,8 +1363,8 @@ class GroovyJsonWriter implements Closeable, Flushable
             if (type != null)
             {
                 Class mapClass = MetaUtils.classForName(type)
-                output.write('"@type":"')
-                output.write(mapClass.getName())
+                output.write(shortMetaKeys ? '"@t":"' : '"@type":"');
+                output.write(getSubstituteTypeName(mapClass.getName()));
                 output.write('"')
             }
             else
@@ -1349,7 +1386,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             newLine()
         }
 
-        output.write('"@keys":[')
+        output.write(shortMetaKeys ? '"@k":[' : '"@keys":[')
         tabIn()
         Iterator i = jObj.keySet().iterator()
 
@@ -1367,7 +1404,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         tabOut()
         output.write('],')
         newLine()
-        output.write('"@items":[')
+        output.write(shortMetaKeys ? '"@e":[' : '"@items":[')
         tabIn()
         i =jObj.values().iterator()
 
@@ -1422,8 +1459,8 @@ class GroovyJsonWriter implements Closeable, Flushable
             if (type != null)
             {
                 Class mapClass = MetaUtils.classForName(type)
-                output.write('"@type":"')
-                output.write(mapClass.getName())
+                output.write(shortMetaKeys ? '"@t":"' : '"@type":"')
+                output.write(getSubstituteTypeName(mapClass.getName()))
                 output.write('"')
             }
             else
@@ -1475,8 +1512,8 @@ class GroovyJsonWriter implements Closeable, Flushable
                 output.write(',')
                 newLine()
             }
-            output.write('"@type":"')
-            output.write(jObj.type)
+            output.write(shortMetaKeys ? '"@t":"' : '"@type":"')
+            output.write(getSubstituteTypeName(jObj.type))
             output.write('"')
             try  { type = MetaUtils.classForName(jObj.type) }
             catch(Exception ignored) { type = null; }
@@ -1591,7 +1628,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             newLine()
         }
 
-        output.write('"@keys":[')
+        output.write(shortMetaKeys ? '"@k":[' : '"@keys":[')
         tabIn()
         Iterator i = map.keySet().iterator()
 
@@ -1609,7 +1646,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         tabOut()
         output.write("],")
         newLine()
-        output.write('"@items":[')
+        output.write(shortMetaKeys ? '"@e":[' : '"@items":[')
         tabIn()
         i = map.values().iterator()
 
