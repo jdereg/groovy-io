@@ -69,7 +69,7 @@ class TestString
     }
 
     @Test
-    void testString() throws Exception
+    void testString()
     {
         ManyStrings test = new ManyStrings()
         String jsonOut = TestUtil.getJsonString(test)
@@ -109,7 +109,7 @@ class TestString
     }
 
     @Test
-    void testRootString() throws Exception
+    void testRootString()
     {
         String s = '"root string"'
         Object o = GroovyJsonReader.jsonToMaps(s)

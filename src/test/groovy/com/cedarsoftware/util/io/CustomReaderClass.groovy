@@ -1,5 +1,8 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
+
+@CompileStatic
 class CustomReaderClass
 {
 

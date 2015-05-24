@@ -1,7 +1,9 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
 import org.junit.Test
 
+import static junit.framework.TestCase.fail
 import static org.junit.Assert.assertTrue
 
 /**
@@ -21,6 +23,7 @@ import static org.junit.Assert.assertTrue
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestCalendars
 {
     public static class TestCalendar implements Serializable
@@ -30,7 +33,7 @@ class TestCalendars
     }
 
     @Test
-    void testCalendarAsField() throws Exception
+    void testCalendarAsField()
     {
         Calendar greg = new GregorianCalendar()
         greg.setTimeZone(TimeZone.getTimeZone("PST"))
@@ -48,7 +51,7 @@ class TestCalendars
     }
 
     @Test
-    void testCalendarTypedArray() throws Exception
+    void testCalendarTypedArray()
     {
         GregorianCalendar[] gregs = [new GregorianCalendar()] as GregorianCalendar[]
         String json = TestUtil.getJsonString(gregs)
@@ -58,7 +61,7 @@ class TestCalendars
     }
 
     @Test
-    void testCalendarUntypedArray() throws Exception
+    void testCalendarUntypedArray()
     {
         Calendar estCal = (Calendar) TestUtil.readJsonObject('{"@type":"java.util.GregorianCalendar","time":"1965-12-17T09:30:16.623-0500","zone":"EST"}')
         Calendar utcCal = (Calendar) TestUtil.readJsonObject('{"@type":"java.util.GregorianCalendar","time":"1965-12-17T14:30:16.623-0000"}')
@@ -71,7 +74,7 @@ class TestCalendars
     }
 
     @Test
-    void testCalendarCollection() throws Exception
+    void testCalendarCollection()
     {
         List gregs = new ArrayList()
         gregs.add(new GregorianCalendar())
@@ -83,7 +86,7 @@ class TestCalendars
     }
 
     @Test
-    void testCalendarInMapValue() throws Exception
+    void testCalendarInMapValue()
     {
         Calendar now = Calendar.instance
         Map map = [:]
@@ -96,7 +99,7 @@ class TestCalendars
     }
 
     @Test
-    void testCalendarInMapKey() throws Exception
+    void testCalendarInMapKey()
     {
         Calendar now = Calendar.instance
         Map map = [:]
@@ -110,7 +113,7 @@ class TestCalendars
     }
 
     @Test
-    void testCalendarInMapofMaps() throws Exception
+    void testCalendarInMapofMaps()
     {
         Calendar now = Calendar.instance
         String json = TestUtil.getJsonString([now] as Object[])
@@ -124,7 +127,7 @@ class TestCalendars
     }
 
     @Test
-    void testBadCalendar() throws Exception
+    void testBadCalendar()
     {
         try
         {
@@ -135,7 +138,7 @@ class TestCalendars
     }
 
     @Test
-    void testCalendar() throws Exception
+    void testCalendar()
     {
         Calendar greg = new GregorianCalendar()
         greg.setTimeZone(TimeZone.getTimeZone("PST"))

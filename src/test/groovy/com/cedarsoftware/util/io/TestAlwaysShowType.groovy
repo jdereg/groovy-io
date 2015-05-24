@@ -1,6 +1,7 @@
 package com.cedarsoftware.util.io
 
 import com.cedarsoftware.util.DeepEquals
+import groovy.transform.CompileStatic
 import org.junit.Test
 
 import static org.junit.Assert.assertTrue
@@ -22,10 +23,11 @@ import static org.junit.Assert.assertTrue
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestAlwaysShowType
 {
     @Test
-    void testAlwaysShowType() throws Exception
+    void testAlwaysShowType()
     {
         TestObject btc = new TestObject("Bitcoin")
         btc._other = new TestObject("Satoshi")

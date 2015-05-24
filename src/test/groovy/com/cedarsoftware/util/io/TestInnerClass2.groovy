@@ -22,7 +22,7 @@ import org.junit.Test
 class TestInnerClass2
 {
     @Test
-    void testChangedClass() throws Exception
+    void testChangedClass()
     {
         Dog dog = new Dog()
         dog.x = 10

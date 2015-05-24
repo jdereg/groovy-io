@@ -1,5 +1,6 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
 import org.junit.Test
 
 import static org.junit.Assert.assertEquals
@@ -24,10 +25,11 @@ import static org.junit.Assert.assertNotNull
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestBigJson
 {
     @Test
-    void testBigJsonToMaps() throws Exception
+    void testBigJsonToMaps()
     {
         String json = TestUtil.fetchResource('big5D.json')
         def map = GroovyJsonReader.jsonToMaps(json)

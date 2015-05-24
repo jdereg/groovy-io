@@ -43,7 +43,7 @@ class TestInnerClass1
     }
 
     @Test
-    void testInner() throws Exception
+    void testInner()
     {
         A a = new A()
         a.a = "aaa"

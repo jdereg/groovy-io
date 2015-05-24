@@ -705,7 +705,7 @@ class ObjectResolver extends Resolver
         }
     }
 
-    public static Class getRawType(final Type t)
+    static Class getRawType(final Type t)
     {
         if (t instanceof ParameterizedType)
         {

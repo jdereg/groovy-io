@@ -1,5 +1,6 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
 import org.junit.Test
 
 import static org.junit.Assert.assertSame
@@ -22,6 +23,7 @@ import static org.junit.Assert.assertTrue
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestClass
 {
     static class ManyClasses implements Serializable
@@ -46,7 +48,7 @@ class TestClass
         private final Object[] _charClassArrayO;
         private final Object[] _CharacterClassArrayO;
 
-        private ManyClasses()
+        ManyClasses()
         {
             _classes_a = new ArrayList()
             _classes_a.add(char.class)
@@ -71,7 +73,7 @@ class TestClass
     }
 
     @Test
-    void testClassAtRoot() throws Exception
+    void testClassAtRoot()
     {
         Class c = Double.class;
         String json = TestUtil.getJsonString(c)
@@ -81,7 +83,7 @@ class TestClass
     }
 
     @Test
-    void testClass() throws Exception
+    void testClass()
     {
         ManyClasses test = new ManyClasses()
         String json = TestUtil.getJsonString(test)

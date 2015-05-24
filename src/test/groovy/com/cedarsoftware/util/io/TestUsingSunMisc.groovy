@@ -63,7 +63,7 @@ class TestUsingSunMisc
     }
 
     @Test
-    void testDirectCreation() throws Exception
+    void testDirectCreation()
     {
         // sun.misc.Unsafe does not appear to work with Groovy in @CompileStatic mode
         MetaUtils.useUnsafe = true;
@@ -93,7 +93,7 @@ class TestUsingSunMisc
     }
 
     @Test
-    void testImpossibleClass() throws Exception
+    void testImpossibleClass()
     {
         // sun.misc.Unsafe does not appear to work with Groovy in @CompileStatic mode
         try

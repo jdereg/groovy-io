@@ -42,7 +42,7 @@ class TestUtil
         return new String(Files.readAllBytes(resPath), "UTF-8");
     }
 
-    static String getJsonString(Object obj) throws Exception
+    static String getJsonString(Object obj)
     {
         ByteArrayOutputStream bout = new ByteArrayOutputStream()
         GroovyJsonWriter jsonWriter = new GroovyJsonWriter(bout)
@@ -81,7 +81,7 @@ class TestUtil
         return json;
     }
 
-    static Object readJsonObject(String json) throws Exception
+    static Object readJsonObject(String json)
     {
         long startRead1 = System.nanoTime()
         Object o = GroovyJsonReader.jsonToGroovy(json)

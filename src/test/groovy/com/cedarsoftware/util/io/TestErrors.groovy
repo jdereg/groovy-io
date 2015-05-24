@@ -25,7 +25,7 @@ import static org.junit.Assert.fail
 class TestErrors
 {
     @Test
-    void testBadJson() throws Exception
+    void testBadJson()
     {
         Object o = null;
 
@@ -42,7 +42,7 @@ class TestErrors
     }
 
     @Test
-    void testParseMissingQuote() throws Exception
+    void testParseMissingQuote()
     {
         try
         {
@@ -271,7 +271,7 @@ class TestErrors
     }
 
     @Test
-    void testMalformedJson() throws Exception
+    void testMalformedJson()
     {
         String json;
 
@@ -365,7 +365,7 @@ class TestErrors
     }
 
     @Test
-    void testBadType() throws Exception
+    void testBadType()
     {
         try
         {
@@ -396,7 +396,7 @@ class TestErrors
     }
 
     @Test
-    void testBadHexNumber() throws Exception
+    void testBadHexNumber()
     {
         StringBuilder str = new StringBuilder()
         str.append("[\"\\")
@@ -410,7 +410,7 @@ class TestErrors
     }
 
     @Test
-    void testBadValue() throws Exception
+    void testBadValue()
     {
         try
         {
@@ -454,7 +454,7 @@ class TestErrors
     }
 
     @Test
-    void testStringEscape() throws Exception
+    void testStringEscape()
     {
         String json = '["escaped slash \\\' should result in a single /"]'
         TestUtil.readJsonObject(json)
@@ -472,7 +472,7 @@ class TestErrors
     }
 
     @Test
-    void testClassMissingValue() throws Exception
+    void testClassMissingValue()
     {
         try
         {
@@ -483,7 +483,7 @@ class TestErrors
     }
 
     @Test
-    void testCalendarMissingValue() throws Exception
+    void testCalendarMissingValue()
     {
         try
         {
@@ -494,7 +494,7 @@ class TestErrors
     }
 
     @Test
-    void testBadFormattedCalendar() throws Exception
+    void testBadFormattedCalendar()
     {
         try
         {
@@ -505,7 +505,7 @@ class TestErrors
     }
 
     @Test
-    void testEmptyClassName() throws Exception
+    void testEmptyClassName()
     {
         try
         {
@@ -516,7 +516,7 @@ class TestErrors
     }
 
     @Test
-    void testBadBackRef() throws Exception
+    void testBadBackRef()
     {
         try
         {

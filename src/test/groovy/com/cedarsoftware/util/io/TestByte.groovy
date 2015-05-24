@@ -1,5 +1,6 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
 import org.junit.Test
 
 import static org.junit.Assert.assertSame
@@ -22,6 +23,7 @@ import static org.junit.Assert.assertTrue
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestByte
 {
     private static class ManyBytes implements Serializable
@@ -36,7 +38,7 @@ class TestByte
         private final Byte _max
         private final Byte _null
 
-        private ManyBytes()
+        ManyBytes()
         {
             _arrayElement = new Byte((byte) -1)
             _polyRefTarget = new Byte((byte)71)
@@ -52,7 +54,7 @@ class TestByte
     }
 
     @Test
-    void testByte() throws Exception
+    void testByte()
     {
         ManyBytes test = new ManyBytes()
         String json = TestUtil.getJsonString(test)

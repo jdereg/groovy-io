@@ -100,7 +100,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
         return line
     }
 
-    public boolean isPrimitive()
+    boolean isPrimitive()
     {
         if (type == null)
         {
@@ -122,7 +122,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
         }
     }
 
-    public static boolean isPrimitiveWrapper(Class c)
+    static boolean isPrimitiveWrapper(Class c)
     {
         final String cname = c.getName()
         switch (cname)
@@ -141,7 +141,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
         }
     }
 
-    public Object getPrimitiveValue()
+    Object getPrimitiveValue()
     {
         switch(type)
         {
@@ -171,7 +171,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
     }
 
     // Map APIs
-    public boolean isMap()
+    boolean isMap()
     {
         if (isMap || target instanceof Map)
         {
@@ -197,7 +197,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
     }
 
     // Collection APIs
-    public boolean isCollection()
+    boolean isCollection()
     {
         if (containsKey("@items") && !containsKey("@keys"))
         {
@@ -222,7 +222,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
     }
 
     // Array APIs
-    public boolean isArray()
+    boolean isArray()
     {
         if (target == null)
         {
@@ -235,12 +235,12 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
         return target.getClass().isArray()
     }
 
-    public Object[] getArray()
+    Object[] getArray()
     {
         return (Object[]) get("@items")
     }
 
-    public int getLength()
+    int getLength()
     {
         if (isArray())
         {
@@ -259,7 +259,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
         throw new JsonIoException("getLength() called on a non-collection, line " + line + ", col " + column)
     }
 
-    public Class getComponentType()
+    Class getComponentType()
     {
         return target.getClass().getComponentType()
     }
@@ -298,7 +298,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
         }
     }
 
-    public V put(K key, V value)
+    V put(K key, V value)
     {
         if (key == null)
         {
@@ -324,7 +324,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
         return super.put(key, value)
     }
 
-    public void clear()
+    void clear()
     {
         super.clear()
         type = null
@@ -335,7 +335,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
         remove("@items")
     }
 
-    public int size()
+    int size()
     {
         if (containsKey("@items"))
         {

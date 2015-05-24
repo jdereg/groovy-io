@@ -23,7 +23,7 @@ import org.junit.Test
 class TestInnerClass
 {
     @Test
-    void testInnerInstance() throws Exception
+    void testInnerInstance()
     {
         Dog dog = new Dog()
         dog.x = 10;

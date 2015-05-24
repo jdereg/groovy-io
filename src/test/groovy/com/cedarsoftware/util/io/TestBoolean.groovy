@@ -1,5 +1,6 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
 import org.junit.Test
 
 import static org.junit.Assert.assertSame
@@ -22,6 +23,7 @@ import static org.junit.Assert.assertTrue
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestBoolean
 {
     static class MyBooleanTesting
@@ -44,7 +46,7 @@ class TestBoolean
         private final Object _polyNotRef
         private final Boolean _null
 
-        private ManyBooleans()
+        ManyBooleans()
         {
             _arrayElement = new Boolean(true)
             _polyRefTarget = new Boolean(true)
@@ -58,7 +60,7 @@ class TestBoolean
     }
 
     @Test
-    void testBoolean() throws Exception
+    void testBoolean()
     {
         ManyBooleans test = new ManyBooleans()
         String json = TestUtil.getJsonString(test)
@@ -97,7 +99,7 @@ class TestBoolean
     }
 
     @Test
-    void testBooleanCompatibility() throws Exception
+    void testBooleanCompatibility()
     {
         MyBooleanTesting testObject = new MyBooleanTesting()
         MyBoolean2Testing testObject2 = new MyBoolean2Testing()

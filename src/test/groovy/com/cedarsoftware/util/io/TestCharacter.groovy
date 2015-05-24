@@ -37,7 +37,7 @@ class TestCharacter
         private final Character _max
         private final Character _null
 
-        private ManyCharacters()
+        ManyCharacters()
         {
             _arrayElement = new Character((char) 1)
             _polyRefTarget = new Character((char)71)
@@ -53,7 +53,7 @@ class TestCharacter
     }
 
     @Test
-    void testCharacter() throws Exception
+    void testCharacter()
     {
         ManyCharacters test = new ManyCharacters()
         String json = TestUtil.getJsonString(test)
@@ -92,7 +92,7 @@ class TestCharacter
     }
 
     @Test
-    void testFunnyChars() throws Exception
+    void testFunnyChars()
     {
         String json = '{"@type":"[C","@items":["a\\t\\u0004"]}'
         char[] chars = (char[]) TestUtil.readJsonObject(json)

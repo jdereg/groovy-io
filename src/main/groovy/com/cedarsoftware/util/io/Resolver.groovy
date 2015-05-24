@@ -569,7 +569,7 @@ abstract class Resolver
     }
 
     // ========== Keep relationship knowledge below the line ==========
-    public static Object newInstance(Class c)
+    static Object newInstance(Class c)
     {
         return GroovyJsonReader.newInstance(c)
     }

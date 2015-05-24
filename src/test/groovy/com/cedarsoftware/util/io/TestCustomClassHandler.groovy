@@ -1,5 +1,6 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
 import org.junit.Test
 
 import java.text.ParseException
@@ -24,6 +25,7 @@ import static org.junit.Assert.assertTrue
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestCustomClassHandler
 {
     public static class WeirdDate extends Date
@@ -88,7 +90,7 @@ class TestCustomClassHandler
     }
 
     @Test
-    void testCustomClassReaderWriter() throws Exception
+    void testCustomClassReaderWriter()
     {
         GroovyJsonWriter.addWriter(WeirdDate.class, new WeirdDateWriter())
         GroovyJsonReader.addReader(WeirdDate.class, new WeirdDateReader())
