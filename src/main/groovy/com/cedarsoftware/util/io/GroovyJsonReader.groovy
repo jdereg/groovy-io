@@ -52,9 +52,9 @@ import static java.util.Map.Entry
 @CompileStatic
 class GroovyJsonReader implements Closeable
 {
-    public static final String USE_MAPS = "USE_MAPS"               // If set, the read-in JSON will be turned into a Map of Maps (JsonObject) representation
-    public static final String UNKNOWN_OBJECT = "UNKNOWN_OBJECT";   // What to do when an object is found and 'type' cannot be determined.
-    public static final String TYPE_NAME_MAP = "TYPE_NAME_MAP"     // If set, this map will be used when writing @type values - allows short-hand abbreviations type names
+    static final String USE_MAPS = "USE_MAPS"               // If set, the read-in JSON will be turned into a Map of Maps (JsonObject) representation
+    static final String UNKNOWN_OBJECT = "UNKNOWN_OBJECT";   // What to do when an object is found and 'type' cannot be determined.
+    static final String TYPE_NAME_MAP = "TYPE_NAME_MAP"     // If set, this map will be used when writing @type values - allows short-hand abbreviations type names
     static final String TYPE_NAME_MAP_REVERSE = "TYPE_NAME_MAP_REVERSE" // This map is the reverse of the TYPE_NAME_MAP (value -> key)
 
     protected static final Map<Class, JsonTypeReader> readers = [
@@ -75,12 +75,11 @@ class GroovyJsonReader implements Closeable
     private static final Map<Class, ClassFactory> factory = new ConcurrentHashMap<>();
     private final Map<Long, JsonObject> objsRead = new HashMap<>()
     private final FastPushbackReader input
-    private boolean useMaps = false
 
     static final ThreadLocal<FastPushbackReader> threadInput = new ThreadLocal<>()
     // _args is using ThreadLocal so that static inner classes can have access to them
     static final ThreadLocal<Map<String, Object>> _args = new ThreadLocal<Map<String, Object>>() {
-        public Map<String, Object> initialValue()
+        Map<String, Object> initialValue()
         {
             return new HashMap<>();
         }
@@ -103,7 +102,7 @@ class GroovyJsonReader implements Closeable
         assignInstantiator(SortedMap.class, mapFactory)
     }
 
-    public interface ClassFactory
+    interface ClassFactory
     {
         Object newInstance(Class c)
     }
@@ -118,7 +117,7 @@ class GroovyJsonReader implements Closeable
      * and is useful when you encounter a class that JsonReader cannot instantiate using its
      * internal exhausting attempts (trying all constructors, varying arguments to them, etc.)
      */
-    public static void assignInstantiator(Class c, ClassFactory f)
+    static void assignInstantiator(Class c, ClassFactory f)
     {
         factory[c] = f
     }
@@ -134,9 +133,9 @@ class GroovyJsonReader implements Closeable
     /**
      * Use to create new instances of collection interfaces (needed for empty collections)
      */
-    public static class CollectionFactory implements ClassFactory
+    static class CollectionFactory implements ClassFactory
     {
-        public Object newInstance(Class c)
+        Object newInstance(Class c)
         {
             if (List.class.isAssignableFrom(c))
             {
@@ -161,9 +160,9 @@ class GroovyJsonReader implements Closeable
     /**
      * Use to create new instances of Map interfaces (needed for empty Maps)
      */
-    public static class MapFactory implements ClassFactory
+    static class MapFactory implements ClassFactory
     {
-        public Object newInstance(Class c)
+        Object newInstance(Class c)
         {
             if (SortedMap.class.isAssignableFrom(c))
             {
@@ -177,7 +176,7 @@ class GroovyJsonReader implements Closeable
         }
     }
 
-    public static void addReader(Class c, JsonTypeReader reader)
+    static void addReader(Class c, JsonTypeReader reader)
     {
         for (Entry entry : readers.entrySet())
         {
@@ -190,7 +189,7 @@ class GroovyJsonReader implements Closeable
         readers[c] = reader
     }
 
-    public static void addNotCustomReader(Class c)
+    static void addNotCustomReader(Class c)
     {
         notCustom.add(c)
     }
@@ -201,7 +200,7 @@ class GroovyJsonReader implements Closeable
      * @param json String JSON input
      * @return Groovy object graph matching JSON input
      */
-    public static Object jsonToGroovy(String json)
+    static Object jsonToGroovy(String json)
     {
         return jsonToGroovy(json, [:])
     }
@@ -212,7 +211,7 @@ class GroovyJsonReader implements Closeable
      * @param json String JSON input
      * @return Groovy object graph matching JSON input
      */
-    public static Object jsonToGroovy(String json, Map<String, Object> optionalArgs)
+    static Object jsonToGroovy(String json, Map<String, Object> optionalArgs)
     {
         optionalArgs[USE_MAPS] = false
         ByteArrayInputStream ba = new ByteArrayInputStream(json.getBytes("UTF-8"))
@@ -232,7 +231,7 @@ class GroovyJsonReader implements Closeable
      * @return Groovy object graph of Maps matching JSON input,
      *         or null if an error occurred.
      */
-    public static Map jsonToMaps(String json)
+    static Map jsonToMaps(String json)
     {
         return jsonToMaps(json, [:])
     }
@@ -248,7 +247,7 @@ class GroovyJsonReader implements Closeable
      * @return Groovy object graph of Maps matching JSON input,
      *         or null if an error occurred.
      */
-    public static Map jsonToMaps(String json, Map<String, Object> optionalArgs)
+    static Map jsonToMaps(String json, Map<String, Object> optionalArgs)
     {
         optionalArgs[USE_MAPS] = true
         ByteArrayInputStream ba = new ByteArrayInputStream(json.getBytes("UTF-8"))
@@ -273,23 +272,23 @@ class GroovyJsonReader implements Closeable
         return retMap
     }
 
-    public GroovyJsonReader()
+    GroovyJsonReader()
     {
-        useMaps = false
         input = null
+        getArgs().put(USE_MAPS, false)
     }
 
-    public GroovyJsonReader(InputStream inp)
+    GroovyJsonReader(InputStream inp)
     {
         this(inp, false)
     }
 
-    public GroovyJsonReader(InputStream inp, boolean useMaps)
+    GroovyJsonReader(InputStream inp, boolean useMaps)
     {
         this(inp, makeArgMap([:], useMaps))
     }
 
-    public GroovyJsonReader(InputStream inp, Map<String, Object> optionalArgs)
+    GroovyJsonReader(InputStream inp, Map<String, Object> optionalArgs)
     {
         Map<String, Object> args = getArgs()
         args.clear()
@@ -307,7 +306,6 @@ class GroovyJsonReader implements Closeable
             args[TYPE_NAME_MAP_REVERSE] = typeNameMap;   // replace with our reversed Map.
         }
 
-        useMaps = Boolean.TRUE.equals(args.get(USE_MAPS));
         try
         {
             input = new FastPushbackReader(new BufferedReader(new InputStreamReader(inp, "UTF-8")))
@@ -334,7 +332,7 @@ class GroovyJsonReader implements Closeable
      * @return Groovy Object graph constructed from InputStream supplying
      *         JSON serialized content.
      */
-    public Object readObject()
+    Object readObject()
     {
         JsonParser parser = new JsonParser(input, objsRead, getArgs())
         JsonObject root = new JsonObject()
@@ -361,7 +359,7 @@ class GroovyJsonReader implements Closeable
             graph = o
         }
         // Allow a complete 'Map' return (Javascript style)
-        if (useMaps)
+        if (useMaps())
         {
             return o
         }
@@ -375,10 +373,15 @@ class GroovyJsonReader implements Closeable
      * JSON input that was parsed in an earlier call to JsonReader.
      * @return a typed Groovy instance that was serialized into JSON.
      */
-    public Object jsonObjectsToGroovy(JsonObject root)
+    Object jsonObjectsToGroovy(JsonObject root)
     {
-        useMaps = false
+        getArgs().put(USE_MAPS, false);
         return convertParsedMapsToGroovy(root)
+    }
+
+    protected boolean useMaps()
+    {
+        return Boolean.TRUE.equals(args.get(USE_MAPS));
     }
 
     /**
@@ -393,7 +396,7 @@ class GroovyJsonReader implements Closeable
      */
     protected Object convertParsedMapsToGroovy(JsonObject root)
     {
-        Resolver resolver = useMaps ? new MapResolver(objsRead, getArgs()) : new ObjectResolver(objsRead, getArgs())
+        Resolver resolver = useMaps() ? new MapResolver(objsRead, getArgs()) : new ObjectResolver(objsRead, getArgs())
         resolver.createGroovyObjectInstance(Object.class, root)
         Object graph = resolver.convertMapsToObjects((JsonObject<String, Object>) root)
         resolver.cleanup()
@@ -415,7 +418,7 @@ class GroovyJsonReader implements Closeable
         }
     }
 
-    public void close()
+    void close()
     {
         try
         {
