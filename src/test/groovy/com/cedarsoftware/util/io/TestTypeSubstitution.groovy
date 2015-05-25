@@ -34,7 +34,6 @@ class TestTypeSubstitution
         Map args = [(GroovyJsonWriter.TYPE_NAME_MAP):types]
         List list = ['alpha', 'bravo', 'charlie']
         String json = GroovyJsonWriter.objectToJson(list, args)
-        println json
         List test = (List) GroovyJsonReader.jsonToGroovy(json, args)
         assert list.equals(test)
     }

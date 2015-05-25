@@ -37,7 +37,6 @@ class TestShortMetaNames
                 (GroovyJsonWriter.TYPE_NAME_MAP):['java.util.ArrayList':'al', 'java.util.LinkedHashMap':'lmap', (TestObject.class.getName()):'to']
         ]
         String json = GroovyJsonWriter.objectToJson(list, args)
-        println json
         List clone = (List) GroovyJsonReader.jsonToGroovy(json, args)
         assert DeepEquals.deepEquals(list, clone)
     }
