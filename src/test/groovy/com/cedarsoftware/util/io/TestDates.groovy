@@ -1,5 +1,6 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
 import org.junit.Test
 
 import java.sql.Timestamp
@@ -27,6 +28,7 @@ import static org.junit.Assert.fail
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestDates
 {
     static class DateTest
@@ -55,7 +57,7 @@ class TestDates
     static class ObjectDateField
     {
         private Object date
-        private ObjectDateField(Object date)
+        ObjectDateField(Object date)
         {
             this.date = date
         }
@@ -64,7 +66,7 @@ class TestDates
     private static class DateField
     {
         private Date date
-        private DateField(Date date)
+        DateField(Date date)
         {
             this.date = date
         }
@@ -73,7 +75,7 @@ class TestDates
     static class SqlDateField
     {
         private java.sql.Date date
-        private SqlDateField(java.sql.Date date)
+        SqlDateField(java.sql.Date date)
         {
             this.date = date
         }
@@ -81,7 +83,7 @@ class TestDates
     static class TimestampField
     {
         private Timestamp date
-        private TimestampField(Timestamp date)
+        TimestampField(Timestamp date)
         {
             this.date = date
         }
@@ -99,7 +101,7 @@ class TestDates
         private final Date _max
         private final Date _null
 
-        private TestDate()
+        TestDate()
         {
             _arrayElement = new Date(-1)
             _polyRefTarget = new Date(71)

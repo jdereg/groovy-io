@@ -1,6 +1,7 @@
 package com.cedarsoftware.util.io
 
 import com.cedarsoftware.util.DeepEquals
+import groovy.transform.CompileStatic
 import org.junit.Test
 
 import java.awt.Point
@@ -29,6 +30,7 @@ import static org.junit.Assert.fail
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestMaps
 {
     static class MapArrayKey

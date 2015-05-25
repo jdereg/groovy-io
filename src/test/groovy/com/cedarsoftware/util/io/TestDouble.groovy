@@ -1,5 +1,6 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
 import org.junit.Test
 
 import static org.junit.Assert.assertNotSame
@@ -22,6 +23,7 @@ import static org.junit.Assert.assertTrue
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestDouble
 {
     private static class ManyDoubles implements Serializable
@@ -36,7 +38,7 @@ class TestDouble
         private final Double _max
         private final Double _null
 
-        private ManyDoubles()
+        ManyDoubles()
         {
             _arrayElement = new Double(-1)
             _polyRefTarget = new Double(71)

@@ -7,7 +7,21 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Created by jderegnaucourt on 2015/02/21.
+ * @author John DeRegnaucourt (jdereg@gmail.com)
+ *         <br/>
+ *         Copyright (c) Cedar Software LLC
+ *         <br/><br/>
+ *         Licensed under the Apache License, Version 2.0 (the "License")
+ *         you may not use this file except in compliance with the License.
+ *         You may obtain a copy of the License at
+ *         <br/><br/>
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *         <br/><br/>
+ *         Unless required by applicable law or agreed to in writing, software
+ *         distributed under the License is distributed on an "AS IS" BASIS,
+ *         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *         See the License for the specific language governing permissions and
+ *         limitations under the License.
  */
 class TestMapsToClasses
 {
@@ -79,7 +93,7 @@ class TestMapsToClasses
   "pets2":[{"name":"eddie","type":"dog"},{"name":"bella","type":"chi hua hua"}]
 }"""
 
-        Person superMan = GroovyJsonReader.jsonToGroovy(json)
+        Person superMan = (Person) GroovyJsonReader.jsonToGroovy(json)
         assert superMan.fname == 'Clark'
         assert superMan.lname == 'Kent'
         assert superMan.age == '40'       // int was converted to String
@@ -137,7 +151,7 @@ class TestMapsToClasses
     "atomicLong":""
 }
 """
-        AllTypes types = GroovyJsonReader.jsonToGroovy(json)
+        AllTypes types = (AllTypes) GroovyJsonReader.jsonToGroovy(json)
         assert types.aBoolean == false
         assert types.aByte == (byte)0
         assert types.aShort == (short)0
@@ -184,7 +198,7 @@ class TestMapsToClasses
     "atomicLong":null
 }
 """
-        AllTypes types = GroovyJsonReader.jsonToGroovy(json)
+        AllTypes types = (AllTypes) GroovyJsonReader.jsonToGroovy(json)
         assert types.aBoolean == false
         assert types.aByte == (byte)0
         assert types.aShort == (short)0

@@ -93,8 +93,8 @@ class TestMapOfMaps
         Map doc = GroovyJsonReader.jsonToMaps(TestUtil.fetchResource("forwardRefNegId.json"))
         Object[] items = doc['@items']
         assertEquals(2, items.length)
-        Map male = items[0]
-        Map female = items[1]
+        Map male = (Map) items[0]
+        Map female = (Map) items[1]
         assertEquals('John', male.name)
         assertEquals('Sonya', female.name)
         assertSame(male.friend, female)
