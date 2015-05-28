@@ -6,7 +6,7 @@ Perfect [Groovy](http://groovy.codehaus.org/) serialization to and from JSON for
 <dependency>
   <groupId>com.cedarsoftware</groupId>
   <artifactId>groovy-io</artifactId>
-  <version>1.1.0</version>
+  <version>1.1.1</version>
 </dependency>
 ```
 [Donations welcome](https://coinbase.com/jdereg)
