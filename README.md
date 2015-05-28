@@ -164,6 +164,9 @@ Use `GroovyJsonWriter.formatJson()` API to format a passed in JSON string to a n
 See https://github.com/jdereg/json-command-servlet for a light-weight servlet that processes Ajax / XHR calls.
 
 Featured on http://json.org.
+ * 1.1.1
+   * Changed `GroovyJsonWriter.writeImpl()` from protected to public to permit access from CustomWriters.
+   * Created `JsonTypeWriterEx` which passes GroovyJsonWriter to the custom writer so that it can re-use the writeImpl() API on the groovyJsonWriter.  It inherits from `JsonTypeWriterBase`.
  * 1.1.0 
   * `GroovyJsonReader.UNKNOWN_OBJECT` added as an option to indicate what to do when an unknown object is encountered in the JSON.  Default is a `Map` will be created.  However, you can set this argument to a `String` class name to instantiate, or set it to false to force an exception to be thrown.
   * **New Feature**: Short class names to reduce the size of the output JSON. This allows you to, for example, substitute `java.util.HashMap` with `hmap` so that it will appear in the JSON as `"@type":"hmap"`.  Pass the substitution map to the `GroovyJsonWriter` (or reader) as an entry in the args `Map` with the key of `GroovyJsonWriter.TYPE_NAME_MAP` and the value as a `Map` instance with String class names as the keys and short-names as the values. The same map can be passed to the `GroovyJsonReader` and it will properly read the substituted types.

@@ -20,9 +20,17 @@ import groovy.transform.CompileStatic
  *         limitations under the License.
  */
 @CompileStatic
-interface JsonTypeWriter extends JsonTypeWriterBase
+interface JsonTypeWriterEx extends JsonTypeWriterBase
 {
-    void write(Object o, boolean showType, Writer output)
-    boolean hasPrimitiveForm()
-    void writePrimitiveForm(Object o, Writer output)
+    String JSON_WRITER = "JSON_WRITER"
+
+    void write(Object o, boolean showType, Writer output, Map<String, Object> args) throws IOException
+
+    class Support
+    {
+        static GroovyJsonWriter getWriter(Map<String, Object> args)
+        {
+            return (GroovyJsonWriter) args.get(JSON_WRITER)
+        }
+    }
 }

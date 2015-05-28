@@ -63,30 +63,18 @@ class GroovyJsonWriter implements Closeable, Flushable
     static final String FIELD_SPECIFIERS = "FIELD_SPECIFIERS"   // Set value to a Map<Class, List<String>> which will be used to control which fields on a class are output
     static final String ENUM_PUBLIC_ONLY = "ENUM_PUBLIC_ONLY" // If set, indicates that private variables of ENUMs are not to be serialized
     static final String WRITE_LONGS_AS_STRINGS = "WLAS"    // If set, longs are written in quotes (Javascript safe)
-    private static final Map<Class, JsonTypeWriter> writers = [
-            (String.class):new Writers.JsonStringWriter(),
-            (Date.class):new Writers.DateWriter(),
-            (BigInteger.class):new Writers.BigIntegerWriter(),
-            (BigDecimal.class):new Writers.BigDecimalWriter(),
-            (java.sql.Date.class):new Writers.DateWriter(),
-            (Timestamp.class):new Writers.TimestampWriter(),
-            (Calendar.class):new Writers.CalendarWriter(),
-            (TimeZone.class):new Writers.TimeZoneWriter(),
-            (Locale.class):new Writers.LocaleWriter(),
-            (Class.class):new Writers.ClassWriter(),
-            (StringBuilder.class):new Writers.StringBuilderWriter(),
-            (StringBuffer.class):new Writers.StringBufferWriter()
-    ]
+    private static final Map<Class, JsonTypeWriterBase> writers = [:]
     private static final Set<Class> notCustom = [] as Set
     private static final Object[] byteStrings = new Object[256]
     private static final String newLine = System.getProperty("line.separator")
     private static final Long ZERO = 0L
-    private static final Map<Class, JsonTypeWriter> writerCache = new ConcurrentHashMap<>()
+    private static final Map<Class, JsonTypeWriterBase> writerCache = new ConcurrentHashMap<>()
     private static final NullClass nullWriter = new NullClass()
     private final Map<Object, Long> objVisited = new IdentityHashMap<>()
     private final Map<Object, Long> objsReferenced = new IdentityHashMap<>()
     private final Writer out
     private Map<String, String> typeNameMap = null;
+    private final Map<String, Object> customArgs = new HashMap<>()
     private boolean shortMetaKeys = false;
     long identity = 1
     private int depth = 0
@@ -105,6 +93,19 @@ class GroovyJsonWriter implements Closeable, Flushable
             char[] chars = Integer.toString(i).toCharArray()
             byteStrings[i + 128] = chars
         }
+
+        writers[String.class] = new Writers.JsonStringWriter()
+        writers[Date.class] = new Writers.DateWriter()
+        writers[BigInteger.class] = new Writers.BigIntegerWriter()
+        writers[BigDecimal.class] = new Writers.BigDecimalWriter()
+        writers[java.sql.Date.class] = new Writers.DateWriter()
+        writers[Timestamp.class] = new Writers.TimestampWriter()
+        writers[Calendar.class] = new Writers.CalendarWriter()
+        writers[TimeZone.class] = new Writers.TimeZoneWriter()
+        writers[Locale.class] = new Writers.LocaleWriter()
+        writers[Class.class] = new Writers.ClassWriter()
+        writers[StringBuilder.class] = new Writers.StringBuilderWriter()
+        writers[StringBuffer.class] = new Writers.StringBufferWriter()
     }
 
     /**
@@ -212,6 +213,7 @@ class GroovyJsonWriter implements Closeable, Flushable
      */
     GroovyJsonWriter(OutputStream out, Map<String, Object> optionalArgs)
     {
+        customArgs[JsonTypeWriterEx.JSON_WRITER] = this
         Map args = _args.get()
         args.clear()
         args.putAll(optionalArgs)
@@ -341,9 +343,9 @@ class GroovyJsonWriter implements Closeable, Flushable
         return writeCustom(arrayComponentClass, o, showType, output)
     }
 
-    private boolean writeCustom(Class arrayComponentClass, Object o, boolean showType, Writer output)
+    protected boolean writeCustom(Class arrayComponentClass, Object o, boolean showType, Writer output)
     {
-		JsonTypeWriter closestWriter = getCustomWriter(arrayComponentClass)
+		JsonTypeWriterBase closestWriter = getCustomWriter(arrayComponentClass)
 
         if (closestWriter == null)
         {
@@ -357,10 +359,17 @@ class GroovyJsonWriter implements Closeable, Flushable
 
         boolean referenced = objsReferenced.containsKey(o)
 
-        if ((!referenced && !showType && closestWriter.hasPrimitiveForm()) || closestWriter instanceof Writers.JsonStringWriter)
+        if (closestWriter instanceof JsonTypeWriter)
         {
-            closestWriter.writePrimitiveForm(o, output)
-            return true
+            JsonTypeWriter writer = (JsonTypeWriter) closestWriter;
+            if (writer.hasPrimitiveForm())
+            {
+                if ((!referenced && !showType) || closestWriter instanceof Writers.JsonStringWriter)
+                {
+                    writer.writePrimitiveForm(o, output)
+                    return true
+                }
+            }
         }
 
         output.write('{')
@@ -386,22 +395,24 @@ class GroovyJsonWriter implements Closeable, Flushable
             newLine()
         }
 
-        closestWriter.write(o, showType || referenced, output)
+        if (closestWriter instanceof JsonTypeWriterEx)
+        {
+            ((JsonTypeWriterEx)closestWriter).write(o, showType || referenced, output, customArgs);
+        }
+        else
+        {
+            ((JsonTypeWriter)closestWriter).write(o, showType || referenced, output);
+        }
         tabOut()
         output.write('}')
         return true
     }
 
-    static class NullClass implements JsonTypeWriter
-    {
-        void write(Object o, boolean showType, Writer output) { }
-        boolean hasPrimitiveForm()  { return false }
-        void writePrimitiveForm(Object o, Writer output) { }
-    }
+    static class NullClass implements JsonTypeWriterBase { }
 
-    private static JsonTypeWriter getCustomWriter(Class c)
+    private static JsonTypeWriterBase getCustomWriter(Class c)
     {
-        JsonTypeWriter writer = writerCache[c]
+        JsonTypeWriterBase writer = writerCache[c]
         if (writer == null)
         {
             synchronized (writerCache)
@@ -417,12 +428,12 @@ class GroovyJsonWriter implements Closeable, Flushable
         return writer.is(nullWriter) ? null : writer
     }
 
-    private static JsonTypeWriter getForceCustomWriter(Class c)
+    private static JsonTypeWriterBase getForceCustomWriter(Class c)
     {
-        JsonTypeWriter closestWriter = nullWriter
+        JsonTypeWriterBase closestWriter = nullWriter
         int minDistance = Integer.MAX_VALUE
 
-        for (Entry<Class, JsonTypeWriter> entry : writers.entrySet())
+        for (Entry<Class, JsonTypeWriterBase> entry : writers.entrySet())
         {
             Class clz = entry.key
             if (clz == c)
@@ -439,9 +450,9 @@ class GroovyJsonWriter implements Closeable, Flushable
         return closestWriter
     }
 
-    static void addWriter(Class c, JsonTypeWriter writer)
+    static void addWriter(Class c, JsonTypeWriterBase writer)
     {
-        for (Entry<Class, JsonTypeWriter> entry : writers.entrySet())
+        for (Entry<Class, JsonTypeWriterBase> entry : writers.entrySet())
         {
             Class clz = entry.key
             if (clz.is(c))
@@ -652,7 +663,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         return false
     }
 
-    protected void writeImpl(Object obj, boolean showType)
+    void writeImpl(Object obj, boolean showType)
     {
         if (obj == null)
         {
