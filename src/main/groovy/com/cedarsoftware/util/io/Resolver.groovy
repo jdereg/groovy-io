@@ -5,6 +5,7 @@ import groovy.transform.CompileStatic
 import java.lang.reflect.Array
 import java.lang.reflect.Field
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
 
 /**
  * This class is used to convert a source of Java Maps that were created from
@@ -36,7 +37,7 @@ abstract class Resolver
 {
     protected final Collection<UnresolvedReference> unresolvedRefs = []
     private static final NullClass nullReader = new NullClass()
-    private static final Map<Class, JsonTypeReader> readerCache = new ConcurrentHashMap<>()
+    private static final ConcurrentMap<Class, JsonTypeReaderBase> readerCache = new ConcurrentHashMap<>()
     private final Collection<Object[]> prettyMaps = []
     private final Map<Long, JsonObject> objsRead
     private final boolean useMaps
@@ -74,19 +75,14 @@ abstract class Resolver
      * null value.  Instead, singleton instance of this class is placed where null values
      * are needed.
      */
-    static class NullClass implements JsonTypeReader
-    {
-        public Object read(Object jOb, Deque<JsonObject<String, Object>> stack)
-        {
-            return null
-        }
-    }
+    static class NullClass implements JsonTypeReaderBase { }
 
-    protected Resolver(Map<Long, JsonObject> objsRead, Map<String, Object> args)
+    protected Resolver(Map<Long, JsonObject> objsRead)
     {
         this.objsRead = objsRead
-        useMaps = Boolean.TRUE.equals(args.get(GroovyJsonReader.USE_MAPS));
-        unknownClass = args.containsKey(GroovyJsonReader.UNKNOWN_OBJECT) ? args.get(GroovyJsonReader.UNKNOWN_OBJECT) : null;
+        Map args = GroovyJsonReader.getArgs()
+        useMaps = Boolean.TRUE.equals(args.get(GroovyJsonReader.USE_MAPS))
+        unknownClass = args.containsKey(GroovyJsonReader.UNKNOWN_OBJECT) ? args.get(GroovyJsonReader.UNKNOWN_OBJECT) : null
     }
 
     /**
@@ -305,10 +301,14 @@ abstract class Resolver
                 }
                 else
                 {
-                    JsonTypeReader customReader = getCustomReader(c)
-                    if (customReader != null)
+                    JsonTypeReaderBase customReader = getCustomReader(c)
+                    if (customReader instanceof JsonTypeReaderEx)
                     {
-                        mate = customReader.read(jsonObj, new ArrayDeque<JsonObject<String, Object>>())
+                        mate = ((JsonTypeReaderEx)customReader).read(jsonObj, new ArrayDeque<JsonObject<String, Object>>(), GroovyJsonReader.getArgs())
+                    }
+                    else if (customReader instanceof JsonTypeReader)
+                    {
+                        mate = ((JsonTypeReader)customReader).read(jsonObj, new ArrayDeque<JsonObject<String, Object>>())
                     }
                     else
                     {
@@ -344,16 +344,16 @@ abstract class Resolver
             {
                 if (unknownClass == null)
                 {
-                    mate = new JsonObject();
-                    ((JsonObject)mate).type = Map.class.getName();
+                    mate = new JsonObject()
+                    ((JsonObject)mate).type = Map.class.getName()
                 }
                 else if (unknownClass instanceof String)
                 {
-                    mate = newInstance(MetaUtils.classForName(((String)unknownClass).trim()));
+                    mate = newInstance(MetaUtils.classForName(((String)unknownClass).trim()))
                 }
                 else
                 {
-                    throw new JsonIoException("Unable to determine object type at column: " + jsonObj.col + ", line: " + jsonObj.line + ", content: " + jsonObj);
+                    throw new JsonIoException("Unable to determine object type at column: " + jsonObj.col + ", line: " + jsonObj.line + ", content: " + jsonObj)
                 }
             }
             else
@@ -374,30 +374,27 @@ abstract class Resolver
         return refObject
     }
 
-    protected static JsonTypeReader getCustomReader(Class c)
+    protected static JsonTypeReaderBase getCustomReader(Class c)
     {
-        JsonTypeReader reader = readerCache[c]
+        JsonTypeReaderBase reader = readerCache[c]
         if (reader == null)
         {
-            synchronized (readerCache)
+            reader = forceGetCustomReader(c)
+            JsonTypeReaderBase readerRef = readerCache.putIfAbsent(c, reader)
+            if (readerRef != null)
             {
-                reader = readerCache[c]
-                if (reader == null)
-                {
-                    reader = forceGetCustomReader(c)
-                    readerCache[c] = reader
-                }
+                reader = readerRef
             }
         }
         return reader == nullReader ? null : reader
     }
 
-    private static JsonTypeReader forceGetCustomReader(Class c)
+    private static JsonTypeReaderBase forceGetCustomReader(Class c)
     {
-        JsonTypeReader closestReader = nullReader
+        JsonTypeReaderBase closestReader = nullReader
         int minDistance = Integer.MAX_VALUE
 
-        for (Map.Entry<Class, JsonTypeReader> entry : getReaders().entrySet())
+        for (Map.Entry<Class, JsonTypeReaderBase> entry : getReaders().entrySet())
         {
             Class clz = entry.key
             if (clz == c)
@@ -584,7 +581,7 @@ abstract class Resolver
         return GroovyJsonReader.error(msg, e)
     }
 
-    protected static Map<Class, JsonTypeReader> getReaders()
+    protected static Map<Class, JsonTypeReaderBase> getReaders()
     {
         return GroovyJsonReader.readers
     }

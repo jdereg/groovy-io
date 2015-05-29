@@ -8,6 +8,7 @@ import java.lang.reflect.Modifier
 import java.sql.Timestamp
 import java.util.Map.Entry
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
 
 /**
  * Output a Groovy object graph in JSON format.  This code handles cyclic
@@ -63,18 +64,17 @@ class GroovyJsonWriter implements Closeable, Flushable
     static final String FIELD_SPECIFIERS = "FIELD_SPECIFIERS"   // Set value to a Map<Class, List<String>> which will be used to control which fields on a class are output
     static final String ENUM_PUBLIC_ONLY = "ENUM_PUBLIC_ONLY" // If set, indicates that private variables of ENUMs are not to be serialized
     static final String WRITE_LONGS_AS_STRINGS = "WLAS"    // If set, longs are written in quotes (Javascript safe)
-    private static final Map<Class, JsonTypeWriterBase> writers = [:]
+    private static final ConcurrentMap<Class, JsonTypeWriterBase> writers = new ConcurrentHashMap<>()
     private static final Set<Class> notCustom = [] as Set
     private static final Object[] byteStrings = new Object[256]
     private static final String newLine = System.getProperty("line.separator")
     private static final Long ZERO = 0L
-    private static final Map<Class, JsonTypeWriterBase> writerCache = new ConcurrentHashMap<>()
+    private static final ConcurrentMap<Class, JsonTypeWriterBase> writerCache = new ConcurrentHashMap<>()
     private static final NullClass nullWriter = new NullClass()
     private final Map<Object, Long> objVisited = new IdentityHashMap<>()
     private final Map<Object, Long> objsReferenced = new IdentityHashMap<>()
     private final Writer out
     private Map<String, String> typeNameMap = null;
-    private final Map<String, Object> customArgs = new HashMap<>()
     private boolean shortMetaKeys = false;
     long identity = 1
     private int depth = 0
@@ -213,10 +213,10 @@ class GroovyJsonWriter implements Closeable, Flushable
      */
     GroovyJsonWriter(OutputStream out, Map<String, Object> optionalArgs)
     {
-        customArgs[JsonTypeWriterEx.JSON_WRITER] = this
         Map args = _args.get()
         args.clear()
         args.putAll(optionalArgs)
+        args[JsonTypeWriterEx.JSON_WRITER] = this
         typeNameMap = (Map<String, String>) args[TYPE_NAME_MAP]
         shortMetaKeys = Boolean.TRUE.equals(args[SHORT_META_KEYS])
 
@@ -397,7 +397,7 @@ class GroovyJsonWriter implements Closeable, Flushable
 
         if (closestWriter instanceof JsonTypeWriterEx)
         {
-            ((JsonTypeWriterEx)closestWriter).write(o, showType || referenced, output, customArgs);
+            ((JsonTypeWriterEx)closestWriter).write(o, showType || referenced, output, getArgs());
         }
         else
         {
@@ -415,14 +415,11 @@ class GroovyJsonWriter implements Closeable, Flushable
         JsonTypeWriterBase writer = writerCache[c]
         if (writer == null)
         {
-            synchronized (writerCache)
+            writer = getForceCustomWriter(c)
+            JsonTypeWriterBase writerRef = writerCache.putIfAbsent(c, writer)
+            if (writerRef != null)
             {
-                writer = writerCache[c]
-                if (writer == null)
-                {
-                    writer = getForceCustomWriter(c)
-                    writerCache[c] = writer
-                }
+                writer = writerRef
             }
         }
         return writer.is(nullWriter) ? null : writer

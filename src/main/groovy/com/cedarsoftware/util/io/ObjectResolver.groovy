@@ -52,9 +52,9 @@ import java.lang.reflect.TypeVariable
 @CompileStatic
 class ObjectResolver extends Resolver
 {
-    protected ObjectResolver(Map<Long, JsonObject> objsRead, Map<String, Object> args)
+    protected ObjectResolver(Map<Long, JsonObject> objsRead)
     {
-        super(objsRead, args)
+        super(objsRead)
     }
 
     /**
@@ -456,7 +456,7 @@ class ObjectResolver extends Resolver
         jsonObj.clearArray()
     }
 
-    protected static Object readIfMatching(final Object o, final Class compType, final Deque<JsonObject<String, Object>> stack)
+    protected Object readIfMatching(final Object o, final Class compType, final Deque<JsonObject<String, Object>> stack)
     {
         if (o == null)
         {
@@ -533,7 +533,7 @@ class ObjectResolver extends Resolver
             c = compType
         }
 
-        JsonTypeReader closestReader = getCustomReader(c)
+        JsonTypeReaderBase closestReader = getCustomReader(c)
 
         if (closestReader == null)
         {
@@ -544,7 +544,16 @@ class ObjectResolver extends Resolver
         {
             ((JsonObject)o).type = c.getName()
         }
-        Object read = closestReader.read(o, stack);
+        Object read;
+        if (closestReader instanceof JsonTypeReaderEx)
+        {
+            read = ((JsonTypeReaderEx)closestReader).read(o, stack, GroovyJsonReader.getArgs());
+        }
+        else
+        {
+            read = ((JsonTypeReader)closestReader).read(o, stack);
+        }
+
         if (isJsonObject)
         {
             ((JsonObject)o).target = read;

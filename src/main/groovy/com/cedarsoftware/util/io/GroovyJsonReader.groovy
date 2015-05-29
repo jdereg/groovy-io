@@ -54,10 +54,11 @@ class GroovyJsonReader implements Closeable
 {
     static final String USE_MAPS = "USE_MAPS"               // If set, the read-in JSON will be turned into a Map of Maps (JsonObject) representation
     static final String UNKNOWN_OBJECT = "UNKNOWN_OBJECT";   // What to do when an object is found and 'type' cannot be determined.
+    static final String JSON_READER = "JSON_READER";         // Pointer to 'this' (automatically placed in the Map)
     static final String TYPE_NAME_MAP = "TYPE_NAME_MAP"     // If set, this map will be used when writing @type values - allows short-hand abbreviations type names
     static final String TYPE_NAME_MAP_REVERSE = "TYPE_NAME_MAP_REVERSE" // This map is the reverse of the TYPE_NAME_MAP (value -> key)
 
-    protected static final Map<Class, JsonTypeReader> readers = [
+    protected static final Map<Class, JsonTypeReaderBase> readers = [
             (String.class):new Readers.StringReader(),
             (Date.class):new Readers.DateReader(),
             (BigInteger.class):new Readers.BigIntegerReader(),
@@ -125,7 +126,7 @@ class GroovyJsonReader implements Closeable
     /**
      * @return The arguments used to configure the JsonReader.  These are thread local.
      */
-    protected static Map getArgs()
+    static Map getArgs()
     {
         return _args.get();
     }
@@ -176,7 +177,7 @@ class GroovyJsonReader implements Closeable
         }
     }
 
-    static void addReader(Class c, JsonTypeReader reader)
+    static void addReader(Class c, JsonTypeReaderBase reader)
     {
         for (Entry entry : readers.entrySet())
         {
@@ -293,6 +294,7 @@ class GroovyJsonReader implements Closeable
         Map<String, Object> args = getArgs()
         args.clear()
         args.putAll(optionalArgs)
+        args[JSON_READER] = this
         Map<String, String> typeNames = (Map<String, String>) args[TYPE_NAME_MAP]
 
         if (typeNames != null)
@@ -396,7 +398,7 @@ class GroovyJsonReader implements Closeable
      */
     protected Object convertParsedMapsToGroovy(JsonObject root)
     {
-        Resolver resolver = useMaps() ? new MapResolver(objsRead, getArgs()) : new ObjectResolver(objsRead, getArgs())
+        Resolver resolver = useMaps() ? new MapResolver(objsRead) : new ObjectResolver(objsRead)
         resolver.createGroovyObjectInstance(Object.class, root)
         Object graph = resolver.convertMapsToObjects((JsonObject<String, Object>) root)
         resolver.cleanup()
