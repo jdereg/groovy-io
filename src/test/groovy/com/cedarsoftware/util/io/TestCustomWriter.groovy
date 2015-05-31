@@ -72,6 +72,8 @@ class TestCustomWriter
     {
         Object read(Object jOb, Deque<JsonObject<String, Object>> stack, Map<String, Object> args)
         {
+            GroovyJsonReader reader = JsonTypeReaderEx.Support.getReader(args)
+            assert reader instanceof GroovyJsonReader
             JsonObject map = (JsonObject) jOb
             Person p = new Person()
             p.firstName = map.f
@@ -114,7 +116,7 @@ class TestCustomWriter
     {
         Person p = createTestPerson()
         GroovyJsonWriter.addWriter(Person.class, new CustomPersonWriter())
-        GroovyJsonReader.addReader(Person.class, new CustomPersonReader())
+        GroovyJsonReader.addReader(Person.class, new CustomPersonReader());
         String json = GroovyJsonWriter.objectToJson(p)
 
         Map obj = GroovyJsonReader.jsonToMaps(json)

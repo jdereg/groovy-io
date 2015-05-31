@@ -4,6 +4,7 @@ import groovy.transform.CompileStatic
 
 import java.sql.Timestamp
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
 
 import static java.util.Map.Entry
 
@@ -58,7 +59,7 @@ class GroovyJsonReader implements Closeable
     static final String TYPE_NAME_MAP = "TYPE_NAME_MAP"     // If set, this map will be used when writing @type values - allows short-hand abbreviations type names
     static final String TYPE_NAME_MAP_REVERSE = "TYPE_NAME_MAP_REVERSE" // This map is the reverse of the TYPE_NAME_MAP (value -> key)
 
-    protected static final Map<Class, JsonTypeReaderBase> readers = [
+    protected static final ConcurrentMap<Class, JsonTypeReaderBase> readers = [
             (String.class):new Readers.StringReader(),
             (Date.class):new Readers.DateReader(),
             (BigInteger.class):new Readers.BigIntegerReader(),
@@ -85,10 +86,6 @@ class GroovyJsonReader implements Closeable
             return new HashMap<>();
         }
     }
-
-    // TODO: Need to finish converting GroovyJsonReader to be equivalent to JsonReader
-    // Convert the GroovyJsonWriter
-    // Copy over test cases.
 
     static
     {

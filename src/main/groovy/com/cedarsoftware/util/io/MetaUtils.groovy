@@ -725,7 +725,7 @@ class MetaUtils
             return error("Error creating primitive wrapper instance for Class: " + className, e);
         }
 
-        return error("Class '" + cname + "' requested for special instantiation - isPrimitive() does not match newPrimitiveWrapper()")
+        return error("Class '" + cname + "' does not have primitive wrapper.")
     }
 
     static String removeLeadingAndTrailingQuotes(String s)

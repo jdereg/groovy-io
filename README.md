@@ -6,7 +6,7 @@ Perfect [Groovy](http://groovy.codehaus.org/) serialization to and from JSON for
 <dependency>
   <groupId>com.cedarsoftware</groupId>
   <artifactId>groovy-io</artifactId>
-  <version>1.1.2</version>
+  <version>1.1.3</version>
 </dependency>
 ```
 [Donations welcome](https://coinbase.com/jdereg)
@@ -181,6 +181,8 @@ Use `GroovyJsonWriter.formatJson()` API to format a passed in JSON string to a n
 See https://github.com/jdereg/json-command-servlet for a light-weight servlet that processes Ajax / XHR calls.
 
 Featured on http://json.org.
+ * 1.1.3
+  * Cache Map's for custom reader's updated to be `ConcurrentMap` instead of `Map`.
  * 1.1.2
   * `JsonTypeReaderEx` added, which passes the 'args' `Map` through to the custom reader.
   * Both `JsonTypeReaderEx` and `JsonTypeWriterEx` have a `Map` as the last argument in their single method that is implemented by the custom reader / writer.  This `Map` is the same as the 'args' `Ma` passed into to the `GroovyJsonReader` / `GroovyJsonWriter`, with the added `JSON_READER` or `JSON_WRITER` key and associated value of the calling `GroovyJsonReader` / `GroovyJsonWriter` instance. 

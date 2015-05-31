@@ -9,15 +9,15 @@ import static org.junit.Assert.assertTrue
 
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
- *         <br/>
+ *         <br>
  *         Copyright (c) Cedar Software LLC
- *         <br/><br/>
+ *         <br><br>
  *         Licensed under the Apache License, Version 2.0 (the "License")
  *         you may not use this file except in compliance with the License.
  *         You may obtain a copy of the License at
- *         <br/><br/>
+ *         <br><br>
  *         http://www.apache.org/licenses/LICENSE-2.0
- *         <br/><br/>
+ *         <br><br>
  *         Unless required by applicable law or agreed to in writing, software
  *         distributed under the License is distributed on an "AS IS" BASIS,
  *         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,6 +26,11 @@ import static org.junit.Assert.assertTrue
  */
 class TestFloat
 {
+    private static class Simple
+    {
+        float x
+    }
+
     private static class ManyFloats implements Serializable
     {
         private final Float _arrayElement
@@ -54,7 +59,7 @@ class TestFloat
     }
 
     @Test
-    void testFloat()
+    void testFloat() throws Exception
     {
         ManyFloats test = new ManyFloats()
         String json = TestUtil.getJsonString(test)
@@ -98,5 +103,19 @@ class TestFloat
 
         assertTrue(that._min.equals(Float.MIN_VALUE))
         assertTrue(that._max.equals(Float.MAX_VALUE))
+    }
+
+    @Test
+    void parseBadFloat()
+    {
+        String json = '[123.45.67]'
+        try
+        {
+            GroovyJsonReader.jsonToMaps(json)
+        }
+        catch (JsonIoException e)
+        {
+            assert e.message.toLowerCase().contains('invalid floating point number')
+        }
     }
 }
