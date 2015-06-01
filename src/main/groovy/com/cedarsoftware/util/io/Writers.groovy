@@ -1,5 +1,7 @@
 package com.cedarsoftware.util.io
 
+import groovy.transform.CompileStatic
+
 import java.sql.Timestamp
 import java.text.Format
 import java.text.SimpleDateFormat
@@ -25,6 +27,7 @@ import java.text.SimpleDateFormat
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class Writers
 {
     static class TimeZoneWriter implements JsonTypeWriter {

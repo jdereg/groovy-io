@@ -35,7 +35,8 @@ class TestByteArray
 
         byte[] bytes2 = (byte[]) TestUtil.readJsonObject(json)
 
-        for (int i = 0; i < bytes.length; i++)
+        final int len = bytes.length
+        for (int i = 0; i < len; i++)
         {
             assertTrue(bytes[i] == bytes2[i])
         }

@@ -20,9 +20,6 @@ import groovy.transform.CompileStatic
  *         limitations under the License.*
  */
 @CompileStatic
-/**
- * Implement this interface to add a custom JSON reader.
- */
 public interface JsonTypeReaderEx extends JsonTypeReaderBase
 {
     Object read(Object jOb, Deque<JsonObject<String, Object>> stack, Map<String, Object> args);

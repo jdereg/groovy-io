@@ -1,4 +1,6 @@
-package com.cedarsoftware.util.io;
+package com.cedarsoftware.util.io
+
+import groovy.transform.CompileStatic;
 
 /**
  * Custom RuntimeException subclass that is used as the main exception thrown by
@@ -20,6 +22,7 @@ package com.cedarsoftware.util.io;
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class JsonIoException extends RuntimeException
 {
     /**

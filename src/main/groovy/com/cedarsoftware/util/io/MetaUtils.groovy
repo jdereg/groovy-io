@@ -84,7 +84,7 @@ class MetaUtils
         // Save memory by re-using common Characters (Characters are immutable)
         for (int i = 0; i < charCache.length; i++)
         {
-            charCache[i] = new Character((char)i)
+            charCache[i] = new Character(i as char)
         }
 
         // Save memory by re-using all byte instances (Bytes are immutable)
