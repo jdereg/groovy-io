@@ -747,7 +747,7 @@ class MetaUtils
      */
     static Character valueOf(char c)
     {
-        return c <= 127 ? charCache[(int) c] : c
+        return c <= 127 ? charCache[c as int] : c
     }
 
     /**

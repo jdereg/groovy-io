@@ -209,7 +209,7 @@ class ObjectResolver extends Resolver
                 {
                     field.set(target, MetaUtils.newPrimitiveWrapper(fieldType, rhs))
                 }
-                else if (rhs instanceof String && "".equals(((String) rhs).trim()) && fieldType != String.class)
+                else if (rhs instanceof String && "".equals((rhs as String).trim()) && fieldType != String.class)
                 {   // Allow "" to null out a non-String field
                     field.set(target, null)
                 }
@@ -290,7 +290,7 @@ class ObjectResolver extends Resolver
             }
             else // if (element instanceof JsonObject)
             {
-                final JsonObject jObj = (JsonObject) element
+                final JsonObject jObj = element as JsonObject
                 final Long ref = (Long) jObj['@ref']
 
                 if (ref != null)
@@ -443,7 +443,7 @@ class ObjectResolver extends Resolver
             }
             else
             {
-                if (element instanceof String && "".equals(((String) element).trim()) && compType != String.class && compType != Object.class)
+                if (element instanceof String && "".equals((element as String).trim()) && compType != String.class && compType != Object.class)
                 {   // Allow an entry of "" in the array to set the array element to null, *if* the array type is NOT String[] and NOT Object[]
                     Array.set(array, i, null)
                 }

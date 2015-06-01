@@ -175,7 +175,7 @@ class JsonParser
                     Object value = readValue(object)
                     if ("@type".equals(field) && typeNameMap != null)
                     {
-                        final String substitute = typeNameMap[value]
+                        final String substitute = typeNameMap[value as String]
                         if (substitute != null)
                         {
                             value = substitute
@@ -224,7 +224,7 @@ class JsonParser
     protected Object readValue(JsonObject object)
     {
         final int c = input.read()
-        switch((char)c)
+        switch(c as char)
         {
             case '"':
                 return readString()
@@ -309,7 +309,7 @@ class JsonParser
             {
                 error("EOF reached while reading token: " + token)
             }
-            c = Character.toLowerCase((char) c)
+            c = Character.toLowerCase(c as char)
             int loTokenChar = token.charAt(i)
 
             if (loTokenChar != c)
@@ -332,7 +332,7 @@ class JsonParser
     {
         final FastPushbackReader inp = input
         final char[] buffer = this.numBuf
-        buffer[0] = (char) c
+        buffer[0] = c as char
         int len = 1
         boolean isFloat = false
 
@@ -343,11 +343,11 @@ class JsonParser
                 c = inp.read()
                 if ((c >= 0x30 && c <= 0x39) || c == '-' || c == '+')     // isDigit() inlined for speed here
                 {
-                    buffer[len++] = (char) c
+                    buffer[len++] = c as char
                 }
                 else if (c == '.' || c == 'e' || c == 'E')
                 {
-                    buffer[len++] = (char) c
+                    buffer[len++] = c as char
                     isFloat = true
                 }
                 else if (c == -1)
@@ -433,7 +433,7 @@ class JsonParser
                     break
 
                 case STATE_STRING_SLASH:
-                    switch((char)c)
+                    switch(c as char)
                     {
                         case '\\':
                             str.append('\\')
@@ -479,7 +479,7 @@ class JsonParser
                     hexBuf.length = 0;
                     state = STATE_HEX_DIGITS;   // intentional 'fall-thru'
                 case STATE_HEX_DIGITS:
-                    switch((char)c)
+                    switch(c as char)
                     {
                         case '0':
                         case '1':
@@ -503,11 +503,11 @@ class JsonParser
                         case 'd':
                         case 'e':
                         case 'f':
-                            hexBuf.append((char) c)
+                            hexBuf.append(c as char)
                             if (hexBuf.length() == 4)
                             {
                                 int value = Integer.parseInt(hexBuf.toString(), 16)
-                                str.append(MetaUtils.valueOf((char) value))
+                                str.append(MetaUtils.valueOf(value as char))
                                 state = STATE_STRING_START
                             }
                             break
@@ -537,7 +537,7 @@ class JsonParser
         int c = inp.read()
         while (true)
         {
-            switch ((char)c)
+            switch (c as char)
             {
                 case '\t':
                 case '\n':

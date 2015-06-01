@@ -164,7 +164,7 @@ class Readers
             }
             else if (o instanceof JsonObject)
             {
-                JsonObject jObj = (JsonObject) o
+                JsonObject jObj = o as JsonObject
                 Object val = jObj.value
                 if (val instanceof Long)
                 {
@@ -531,12 +531,12 @@ class Readers
         }
         else if (value instanceof BigDecimal)
         {
-            BigDecimal bd = (BigDecimal) value
+            BigDecimal bd = value as BigDecimal
             return bd.toBigInteger()
         }
         else if (value instanceof Boolean)
         {
-            return ((Boolean) value) ? BigInteger.ONE : BigInteger.ZERO
+            return (value as Boolean) ? BigInteger.ONE : BigInteger.ZERO
         }
         else if (value instanceof Double || value instanceof Float)
         {
@@ -614,7 +614,7 @@ class Readers
         }
         else if (value instanceof String)
         {
-            String s = (String) value
+            String s = value as String
             if ("".equals(s.trim()))
             {
                 return null

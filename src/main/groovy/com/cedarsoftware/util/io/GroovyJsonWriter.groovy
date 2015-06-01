@@ -1241,7 +1241,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             }
             else if (value instanceof String)
             {   // Have to specially treat String because it could be referenced, but we still want inline (no @type, value:)
-                writeJsonUtf8String((String) value, output)
+                writeJsonUtf8String(value as String, output)
             }
             else if (isObjectArray)
             {
@@ -1565,7 +1565,7 @@ class GroovyJsonWriter implements Closeable, Flushable
             }
             else if (value instanceof String)
             {
-                writeJsonUtf8String((String) value, output)
+                writeJsonUtf8String(value as String, output)
             }
             else if (value instanceof Character)
             {
@@ -1767,7 +1767,7 @@ class GroovyJsonWriter implements Closeable, Flushable
         }
         else if (o instanceof String)
         {
-            writeJsonUtf8String((String) o, out)
+            writeJsonUtf8String(o as String, out)
         }
         else
         {
@@ -1931,7 +1931,7 @@ class GroovyJsonWriter implements Closeable, Flushable
                         output.write('\\t')
                         break
                     default:
-                        String hex = Integer.toHexString((int)c)
+                        String hex = Integer.toHexString(c as int)
                         output.write('\\u')
                         final int pad = 4 - hex.length()
                         for (int k = 0; k < pad; k++)
@@ -1942,7 +1942,7 @@ class GroovyJsonWriter implements Closeable, Flushable
                         break
                 }
             }
-            else if (c == (char)'\\' || c == (char)'"')
+            else if (c == '\\' as char || c == '"' as char)
             {
                 output.write('\\')
                 output.write(c)

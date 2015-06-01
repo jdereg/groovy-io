@@ -48,7 +48,7 @@ abstract class Resolver
      * could not yet be loaded, as the @ref appears ahead of the referenced object's
      * definition.  This can point to a field reference or an array/Collection element reference.
      */
-    protected static final class UnresolvedReference
+    static class UnresolvedReference
     {
         private final JsonObject referencingObj
         private String field

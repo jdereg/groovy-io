@@ -308,7 +308,7 @@ class JsonObject<K, V> extends LinkedHashMap<K, V>
             V value = get("@items")
             if (value instanceof Object[])
             {
-                return ((Object[])value).length
+                return (value as Object[]).length
             }
             else if (value == null)
             {

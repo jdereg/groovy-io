@@ -122,7 +122,7 @@ class MapResolver extends Resolver
                 {
                     if (fieldType != String.class && fieldType != StringBuilder.class && fieldType != StringBuffer.class)
                     {
-                        if ("".equals(((String)rhs).trim()))
+                        if ("".equals((rhs as String).trim()))
                         {   // Allow "" to null out a non-String field on the inbound JSON
                             jsonObj[fieldName] = null
                         }
@@ -171,7 +171,7 @@ class MapResolver extends Resolver
             }
             else if (element instanceof JsonObject)
             {
-                JsonObject<String, Object> jsonObject = (JsonObject<String, Object>) element
+                JsonObject<String, Object> jsonObject = element as JsonObject<String, Object>
                 Long ref = (Long) jsonObject['@ref']
 
                 if (ref != null)
